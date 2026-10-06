@@ -8,8 +8,10 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleCheck,
+  ClipboardList,
   FileText,
   Menu,
+  MessageSquare,
   PlayCircle,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -207,6 +209,23 @@ function LessonSidebar({
 }) {
   return (
     <div className="space-y-4 p-4">
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href={`/learn/${courseSlug}/assignments`}
+          className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          <ClipboardList className="size-4" />
+          Assignments
+        </Link>
+        <Link
+          href={`/learn/${courseSlug}/chat`}
+          className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          <MessageSquare className="size-4" />
+          Chat
+        </Link>
+      </div>
+
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium">Course content</span>
