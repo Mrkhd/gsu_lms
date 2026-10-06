@@ -2,6 +2,8 @@ import { and, asc, count, desc, eq, inArray, like, or, sql } from "drizzle-orm"
 
 import { getDb } from "@/db/client"
 import {
+  assignmentSubmissions,
+  assignments,
   bundleCourses,
   bundleEnrollments,
   bundles,
@@ -838,6 +840,116 @@ export async function getStudentPrograms(studentId: string) {
 }
 
 export type StudentProgramItem = Awaited<ReturnType<typeof getStudentPrograms>>[number]
+
+// ---------------------------------------------------------------------------
+// Assignments
+// ---------------------------------------------------------------------------
+
+export async function getCourseAssignments(courseId: string) {
+  const db = getDb()
+  const [rows, subs] = await Promise.all([
+    db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.courseId, courseId))
+      .orderBy(asc(assignments.createdAt)),
+    db
+      .select({ assignmentId: assignmentSubmissions.assignmentId, status: assignmentSubmissions.status })
+      .from(assignmentSubmissions)
+      .where(eq(assignmentSubmissions.courseId, courseId)),
+  ])
+  const map = new Map<string, { total: number; graded: number }>()
+  for (const sub of subs) {
+    const entry = map.get(sub.assignmentId) ?? { total: 0, graded: 0 }
+    entry.total++
+    if (sub.status === "GRADED") entry.graded++
+    map.set(sub.assignmentId, entry)
+  }
+  return rows.map((assignment) => ({
+    ...assignment,
+    submissionCount: map.get(assignment.id)?.total ?? 0,
+    gradedCount: map.get(assignment.id)?.graded ?? 0,
+  }))
+}
+
+export type CourseAssignmentItem = Awaited<ReturnType<typeof getCourseAssignments>>[number]
+
+export async function getAssignmentWithSubmissions(assignmentId: string) {
+  const db = getDb()
+  const [assignment] = await db
+    .select()
+    .from(assignments)
+    .where(eq(assignments.id, assignmentId))
+    .limit(1)
+  if (!assignment) return null
+
+  const [course] = await db
+    .select({
+      id: courses.id,
+      title: courses.title,
+      slug: courses.slug,
+      instructorId: courses.instructorId,
+    })
+    .from(courses)
+    .where(eq(courses.id, assignment.courseId))
+    .limit(1)
+
+  const rows = await db
+    .select({
+      submission: assignmentSubmissions,
+      studentId: users.id,
+      email: users.email,
+      firstName: profiles.firstName,
+      lastName: profiles.lastName,
+      avatarUrl: profiles.avatarUrl,
+    })
+    .from(assignmentSubmissions)
+    .innerJoin(users, eq(assignmentSubmissions.studentId, users.id))
+    .leftJoin(profiles, eq(profiles.userId, users.id))
+    .where(eq(assignmentSubmissions.assignmentId, assignmentId))
+    .orderBy(desc(assignmentSubmissions.submittedAt))
+
+  return {
+    assignment,
+    course,
+    submissions: rows.map((row) => ({
+      ...row.submission,
+      student: {
+        id: row.studentId,
+        email: row.email,
+        profile: { firstName: row.firstName, lastName: row.lastName, avatarUrl: row.avatarUrl },
+      },
+    })),
+  }
+}
+
+export type AssignmentWithSubmissions = NonNullable<
+  Awaited<ReturnType<typeof getAssignmentWithSubmissions>>
+>
+
+export async function getStudentCourseAssignments(studentId: string, courseId: string) {
+  const db = getDb()
+  const [rows, subs] = await Promise.all([
+    db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.courseId, courseId))
+      .orderBy(asc(assignments.createdAt)),
+    db
+      .select()
+      .from(assignmentSubmissions)
+      .where(
+        and(
+          eq(assignmentSubmissions.studentId, studentId),
+          eq(assignmentSubmissions.courseId, courseId)
+        )
+      ),
+  ])
+  const map = new Map(subs.map((sub) => [sub.assignmentId, sub]))
+  return rows.map((assignment) => ({ ...assignment, submission: map.get(assignment.id) ?? null }))
+}
+
+export type StudentAssignmentItem = Awaited<ReturnType<typeof getStudentCourseAssignments>>[number]
 
 // Re-export commonly used order-item type for pages that need it.
 export { orderItems }

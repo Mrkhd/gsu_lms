@@ -10,10 +10,12 @@ import { PageHeader } from "@/components/dashboard-shell"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AssignmentsManager } from "@/components/admin/assignments-manager"
 import { getDb } from "@/db/client"
 import { courses } from "@/db/schema"
 import { getCategoryOptions, getInstructorOptions } from "@/db/options"
 import { toNumber } from "@/lib/format"
+import { getCourseAssignments } from "@/lib/queries"
 import { canManageCourse, getCurrentUser } from "@/lib/auth/server"
 import { setCourseStatusAction } from "@/server/actions/courses"
 
@@ -28,7 +30,7 @@ export async function CourseEditor({
   if (!user) notFound()
 
   const db = getDb()
-  const [course, categories, instructors] = await Promise.all([
+  const [course, categories, instructors, assignments] = await Promise.all([
     db.query.courses.findFirst({
       where: eq(courses.id, courseId),
       with: {
@@ -40,6 +42,7 @@ export async function CourseEditor({
     }),
     getCategoryOptions(),
     getInstructorOptions(),
+    getCourseAssignments(courseId),
   ])
 
   if (!course) notFound()
@@ -100,6 +103,7 @@ export async function CourseEditor({
       <Tabs defaultValue="curriculum" className="space-y-6">
         <TabsList>
           <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="basic">Basic info</TabsTrigger>
         </TabsList>
 
@@ -132,6 +136,10 @@ export async function CourseEditor({
               })),
             }))}
           />
+        </TabsContent>
+
+        <TabsContent value="assignments">
+          <AssignmentsManager courseId={course.id} basePath={basePath} assignments={assignments} />
         </TabsContent>
 
         <TabsContent value="basic">

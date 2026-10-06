@@ -28,3 +28,6 @@ export type EnrollmentStatus = (typeof ENROLLMENT_STATUSES)[number]
 
 export const PROGRAM_LEVELS = ["Certificate", "Diploma", "Bachelor", "Master"] as const
 export type ProgramLevel = (typeof PROGRAM_LEVELS)[number]
+
+export const SUBMISSION_STATUSES = ["SUBMITTED", "GRADED"] as const
+export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number]

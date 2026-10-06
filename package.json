@@ -14,8 +14,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:seed:generate": "node scripts/seed.mjs",
-    "db:migrate:local": "wrangler d1 execute gsu-postgraduate --local --file drizzle/migrations/0000_dapper_blonde_phantom.sql",
-    "db:migrate:remote": "wrangler d1 execute gsu-postgraduate --remote --file drizzle/migrations/0000_dapper_blonde_phantom.sql",
+    "db:migrate:local": "wrangler d1 execute gsu-postgraduate --local --file drizzle/migrations/0000_dapper_blonde_phantom.sql && wrangler d1 execute gsu-postgraduate --local --file drizzle/migrations/0001_open_morgan_stark.sql",
+    "db:migrate:remote": "wrangler d1 execute gsu-postgraduate --remote --file drizzle/migrations/0000_dapper_blonde_phantom.sql && wrangler d1 execute gsu-postgraduate --remote --file drizzle/migrations/0001_open_morgan_stark.sql",
     "db:seed:local": "node scripts/seed.mjs && wrangler d1 execute gsu-postgraduate --local --file drizzle/seed.sql",
     "db:seed:remote": "node scripts/seed.mjs && wrangler d1 execute gsu-postgraduate --remote --file drizzle/seed.sql",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"

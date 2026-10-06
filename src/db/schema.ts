@@ -19,6 +19,7 @@ import type {
   PublishStatus,
   ProgramLevel,
   Role,
+  SubmissionStatus,
   UserStatus,
 } from "./types"
 
@@ -480,6 +481,64 @@ export const programEnrollments = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
+// Assignments
+// ---------------------------------------------------------------------------
+
+export const assignments = sqliteTable(
+  "assignments",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    courseId: text("course_id").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    dueAt: integer("due_at", { mode: "timestamp_ms" }),
+    maxPoints: integer("max_points").notNull().default(100),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("assignments_course_id_idx").on(t.courseId),
+    foreignKey({ columns: [t.courseId], foreignColumns: [courses.id], name: "assignments_course_id_fkey" }).onDelete(
+      "cascade"
+    ),
+  ]
+)
+
+export const assignmentSubmissions = sqliteTable(
+  "assignment_submissions",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    assignmentId: text("assignment_id").notNull(),
+    studentId: text("student_id").notNull(),
+    courseId: text("course_id").notNull(),
+    fileKey: text("file_key").notNull(),
+    fileName: text("file_name").notNull(),
+    submittedAt: integer("submitted_at", { mode: "timestamp_ms" }).notNull().$defaultFn(nowMs),
+    status: text("status").$type<SubmissionStatus>().notNull().default("SUBMITTED"),
+    grade: real("grade"),
+    feedback: text("feedback"),
+    gradedAt: integer("graded_at", { mode: "timestamp_ms" }),
+    gradedById: text("graded_by_id"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("assignment_submissions_assignment_student_key").on(t.assignmentId, t.studentId),
+    index("assignment_submissions_assignment_id_idx").on(t.assignmentId),
+    index("assignment_submissions_student_id_idx").on(t.studentId),
+    foreignKey({ columns: [t.assignmentId], foreignColumns: [assignments.id], name: "assignment_submissions_assignment_id_fkey" }).onDelete(
+      "cascade"
+    ),
+    foreignKey({ columns: [t.studentId], foreignColumns: [users.id], name: "assignment_submissions_student_id_fkey" }).onDelete(
+      "cascade"
+    ),
+    foreignKey({ columns: [t.courseId], foreignColumns: [courses.id], name: "assignment_submissions_course_id_fkey" }).onDelete(
+      "cascade"
+    ),
+  ]
+)
+
+// ---------------------------------------------------------------------------
 // Relations (for db.query.*)
 // ---------------------------------------------------------------------------
 
@@ -493,6 +552,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   orders: many(orders),
   reviews: many(reviews),
   notifications: many(notifications),
+  assignmentSubmissions: many(assignmentSubmissions),
 }))
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
@@ -516,6 +576,7 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
   orderItems: many(orderItems),
   reviews: many(reviews),
   lessonProgress: many(lessonProgress),
+  assignments: many(assignments),
 }))
 
 export const courseSectionsRelations = relations(courseSections, ({ one, many }) => ({
@@ -575,6 +636,20 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}))
+
+export const assignmentsRelations = relations(assignments, ({ one, many }) => ({
+  course: one(courses, { fields: [assignments.courseId], references: [courses.id] }),
+  submissions: many(assignmentSubmissions),
+}))
+
+export const assignmentSubmissionsRelations = relations(assignmentSubmissions, ({ one }) => ({
+  assignment: one(assignments, {
+    fields: [assignmentSubmissions.assignmentId],
+    references: [assignments.id],
+  }),
+  student: one(users, { fields: [assignmentSubmissions.studentId], references: [users.id] }),
+  course: one(courses, { fields: [assignmentSubmissions.courseId], references: [courses.id] }),
 }))
 
 export const programsRelations = relations(programs, ({ many }) => ({
