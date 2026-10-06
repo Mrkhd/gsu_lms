@@ -81,34 +81,25 @@ const DEPARTMENTS = [
 
 export default function HomePage() {
   return (
-    <div className="bg-[#2b0808] text-red-50">
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#4d0f0f] via-[#3a0b0b] to-[#2b0808]">
+    <div className="bg-background text-foreground">
+      <section className="bg-gradient-to-b from-primary/5 to-background">
         <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:py-28">
-          <Badge className="border border-amber-400/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/10">
+          <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary">
             <GraduationCap className="size-3.5" />
             In collaboration with Lincoln University College, Malaysia
           </Badge>
           <h1 className="mt-6 font-heading text-4xl font-bold tracking-tight text-balance sm:text-6xl">
             Postgraduate Programs
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-red-100/80">
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
             Explore our range of master&apos;s and doctoral programs designed to advance your
             professional career and research expertise.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="bg-amber-500 text-[#3a0b0b] hover:bg-amber-400"
-            >
+            <Button asChild size="lg">
               <Link href="/register">Apply Now</Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/25 bg-transparent text-red-50 hover:bg-white/10 hover:text-white"
-            >
+            <Button asChild size="lg" variant="outline">
               <Link href="/programs">
                 <Download className="size-4" />
                 Download Brochure
@@ -118,15 +109,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="border-y border-white/10 bg-[#3a0b0b]">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 text-sm text-red-200/70">
-          <Link href="/" className="hover:text-white">
+      <div className="border-y bg-muted/30">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
+          <Link href="/" className="hover:text-primary">
             University
           </Link>
           <span>/</span>
           <span>Academics</span>
           <span>/</span>
-          <span className="font-medium text-red-50">Postgraduate Programs</span>
+          <span className="font-medium text-foreground">Postgraduate Programs</span>
         </div>
       </div>
 
@@ -136,24 +127,24 @@ export default function HomePage() {
           {DEPARTMENTS.map((department, index) => (
             <article
               key={`${department.faculty}-${index}`}
-              className="flex flex-col rounded-2xl border border-white/10 bg-[#3a0b0b] p-6 transition-colors hover:border-amber-400/40"
+              className="flex flex-col rounded-2xl border bg-card p-6 text-card-foreground transition-colors hover:border-primary/40"
             >
-              <div className="flex size-12 items-center justify-center rounded-xl bg-amber-400/10 text-2xl">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-2xl">
                 🎓
               </div>
-              <p className="mt-4 text-xs font-semibold tracking-wide text-amber-300 uppercase">
+              <p className="mt-4 text-xs font-semibold tracking-wide text-primary uppercase">
                 {department.faculty}
               </p>
               <h3 className="mt-1 font-heading text-lg leading-snug font-semibold">
                 {department.title}
               </h3>
-              <p className="mt-1 text-xs text-red-200/60">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Offered in collaboration with Lincoln University College
               </p>
-              <p className="mt-3 flex-1 text-sm text-red-100/70">{department.description}</p>
+              <p className="mt-3 flex-1 text-sm text-muted-foreground">{department.description}</p>
               <Link
                 href="/programs"
-                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-amber-300 hover:text-amber-200"
+                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
               >
                 Learn More
                 <ArrowRight className="size-4" />
@@ -163,28 +154,24 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-white/10 bg-[#4d0f0f]">
+      <section className="bg-primary text-primary-foreground">
         <div className="mx-auto max-w-6xl px-4 py-16 text-center">
           <h2 className="font-heading text-3xl font-bold tracking-tight">
             Ready to Begin Your Journey?
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-red-100/80">
+          <p className="mx-auto mt-3 max-w-2xl text-primary-foreground/80">
             Join hundreds of postgraduate students at Galmudug State University. Applications for the
             next intake are now open.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="bg-amber-500 text-[#3a0b0b] hover:bg-amber-400"
-            >
+            <Button asChild size="lg" variant="secondary">
               <Link href="/register">Apply Online Today</Link>
             </Button>
             <Button
               asChild
               size="lg"
               variant="outline"
-              className="border-white/25 bg-transparent text-red-50 hover:bg-white/10 hover:text-white"
+              className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
             >
               <Link href="mailto:info@galmudugsu.edu.so">Request More Information</Link>
             </Button>

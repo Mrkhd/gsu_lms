@@ -27,12 +27,7 @@ export function MobileNav({ user }: { user: AccountMenuUser | null }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-red-100 hover:bg-white/10 hover:text-white md:hidden"
-          aria-label="Open menu"
-        >
+        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
           <Menu />
         </Button>
       </SheetTrigger>

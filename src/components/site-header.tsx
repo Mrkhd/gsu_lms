@@ -24,21 +24,15 @@ export async function SiteHeader() {
     : null
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#3a0b0b]/95 text-red-50 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4">
         <MobileNav user={menuUser} />
-        <Link href="/" className="font-heading text-lg font-semibold text-red-50">
+        <Link href="/" className="font-heading text-lg font-semibold">
           {APP_NAME}
         </Link>
         <nav className="ml-4 hidden items-center gap-1 text-sm md:flex">
           {LINKS.map((link) => (
-            <Button
-              key={link.href}
-              asChild
-              variant="ghost"
-              size="sm"
-              className="text-red-100 hover:bg-white/10 hover:text-white"
-            >
+            <Button key={link.href} asChild variant="ghost" size="sm">
               <Link href={link.href}>{link.label}</Link>
             </Button>
           ))}
@@ -48,15 +42,10 @@ export async function SiteHeader() {
             <AccountMenu user={menuUser} />
           ) : (
             <>
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="hidden text-red-100 hover:bg-white/10 hover:text-white sm:inline-flex"
-              >
+              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
                 <Link href="/login">Log in</Link>
               </Button>
-              <Button asChild size="sm" className="bg-amber-500 text-[#3a0b0b] hover:bg-amber-400">
+              <Button asChild size="sm">
                 <Link href="/register">Get started</Link>
               </Button>
             </>

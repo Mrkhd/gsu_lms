@@ -45,13 +45,11 @@ const SOCIALS = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-white/10 bg-[#2b0808] text-red-100">
+    <footer className="border-t bg-muted/30 text-foreground">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 lg:grid-cols-[1.5fr_1fr_1fr]">
         <div className="space-y-4">
-          <p className="font-heading text-lg font-semibold text-red-50">
-            Galmudug State University (GSU)
-          </p>
-          <p className="text-sm leading-relaxed text-red-200/70">
+          <p className="font-heading text-lg font-semibold">Galmudug State University (GSU)</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
             Galmudug State University (GSU) is a prestigious institution situated in Galmudug State,
             within the Federal Republic of Somalia. Established in 2014, the university owes its
             inception to the generous support of the UK DFID grant, which was awarded through Comic
@@ -65,7 +63,7 @@ export function SiteFooter() {
                   key={social.label}
                   href="#"
                   aria-label={social.label}
-                  className="flex size-9 items-center justify-center rounded-full border border-white/15 text-red-100 transition-colors hover:bg-white/10 hover:text-white"
+                  className="flex size-9 items-center justify-center rounded-full border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                 >
                   <Icon />
                 </a>
@@ -73,23 +71,20 @@ export function SiteFooter() {
             })}
           </div>
           <div className="flex max-w-sm items-center gap-2">
-            <Input
-              type="email"
-              placeholder="sample@mail.com"
-              className="border-white/15 bg-white/5 text-red-50 placeholder:text-red-200/50"
-            />
-            <Button className="shrink-0 bg-amber-500 text-[#3a0b0b] hover:bg-amber-400">
-              Subscribe
-            </Button>
+            <Input type="email" placeholder="sample@mail.com" />
+            <Button className="shrink-0">Subscribe</Button>
           </div>
         </div>
 
         <div>
-          <p className="font-heading font-semibold text-red-50">Quick Links</p>
+          <p className="font-heading font-semibold">Quick Links</p>
           <ul className="mt-4 space-y-2 text-sm">
             {QUICK_LINKS.map((link) => (
               <li key={link.label}>
-                <Link href={link.href} className="text-red-200/70 transition-colors hover:text-white">
+                <Link
+                  href={link.href}
+                  className="text-muted-foreground transition-colors hover:text-primary"
+                >
                   {link.label}
                 </Link>
               </li>
@@ -98,17 +93,17 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <p className="font-heading font-semibold text-red-50">Contact Details</p>
-          <ul className="mt-4 space-y-3 text-sm text-red-200/70">
+          <p className="font-heading font-semibold">Contact Details</p>
+          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li className="flex items-center gap-2">
               <Mail className="size-4 shrink-0" />
-              <a href="mailto:info@galmudugsu.edu.so" className="hover:text-white">
+              <a href="mailto:info@galmudugsu.edu.so" className="hover:text-primary">
                 info@galmudugsu.edu.so
               </a>
             </li>
             <li className="flex items-center gap-2">
               <Phone className="size-4 shrink-0" />
-              <a href="tel:+252614553336" className="hover:text-white">
+              <a href="tel:+252614553336" className="hover:text-primary">
                 +252 614553336
               </a>
             </li>
@@ -120,7 +115,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="border-t border-white/10 py-4 text-center text-xs text-red-200/60">
+      <div className="border-t py-4 text-center text-xs text-muted-foreground">
         © {new Date().getFullYear()} Galmudug State University (GSU). All rights reserved.
       </div>
     </footer>
