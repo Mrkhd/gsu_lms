@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { eq } from "drizzle-orm"
-import { Users } from "lucide-react"
+import { MessageSquare, Users } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
 import { CourseForm } from "@/components/admin/course-form"
@@ -69,6 +69,12 @@ export async function CourseEditor({
               <Link href={`${basePath}/courses/${course.id}/students`}>
                 <Users />
                 Students
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`${basePath}/courses/${course.id}/chat`}>
+                <MessageSquare />
+                Chat
               </Link>
             </Button>
             {viewerRole === "ADMIN" ? (

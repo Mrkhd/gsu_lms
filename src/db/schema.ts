@@ -20,6 +20,7 @@ import type {
   ProgramLevel,
   Role,
   SubmissionStatus,
+  ConversationType,
   UserStatus,
 } from "./types"
 
@@ -395,6 +396,7 @@ export const notifications = sqliteTable(
     userId: text("user_id").notNull(),
     title: text("title").notNull(),
     body: text("body"),
+    url: text("url"),
     read: integer("read", { mode: "boolean" }).notNull().default(false),
     createdAt: createdAt(),
   },
@@ -539,6 +541,53 @@ export const assignmentSubmissions = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
+// Course communication
+// ---------------------------------------------------------------------------
+
+export const conversations = sqliteTable(
+  "conversations",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    type: text("type").$type<ConversationType>().notNull(),
+    courseId: text("course_id").notNull(),
+    /** DIRECT only: the participating student */
+    studentId: text("student_id"),
+    /** DIRECT only: the course instructor */
+    instructorId: text("instructor_id"),
+    lastMessageAt: integer("last_message_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("conversations_course_id_type_idx").on(t.courseId, t.type),
+    index("conversations_student_id_idx").on(t.studentId),
+    foreignKey({ columns: [t.courseId], foreignColumns: [courses.id], name: "conversations_course_id_fkey" }).onDelete(
+      "cascade"
+    ),
+  ]
+)
+
+export const messages = sqliteTable(
+  "messages",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    conversationId: text("conversation_id").notNull(),
+    senderId: text("sender_id").notNull(),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("messages_conversation_id_created_at_idx").on(t.conversationId, t.createdAt),
+    foreignKey({ columns: [t.conversationId], foreignColumns: [conversations.id], name: "messages_conversation_id_fkey" }).onDelete(
+      "cascade"
+    ),
+    foreignKey({ columns: [t.senderId], foreignColumns: [users.id], name: "messages_sender_id_fkey" }).onDelete(
+      "cascade"
+    ),
+  ]
+)
+
+// ---------------------------------------------------------------------------
 // Relations (for db.query.*)
 // ---------------------------------------------------------------------------
 
@@ -553,6 +602,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   reviews: many(reviews),
   notifications: many(notifications),
   assignmentSubmissions: many(assignmentSubmissions),
+  messages: many(messages),
 }))
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
@@ -577,6 +627,21 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
   reviews: many(reviews),
   lessonProgress: many(lessonProgress),
   assignments: many(assignments),
+  conversations: many(conversations),
+}))
+
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+  course: one(courses, { fields: [conversations.courseId], references: [courses.id] }),
+  student: one(users, { fields: [conversations.studentId], references: [users.id] }),
+  messages: many(messages),
+}))
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  sender: one(users, { fields: [messages.senderId], references: [users.id] }),
 }))
 
 export const courseSectionsRelations = relations(courseSections, ({ one, many }) => ({

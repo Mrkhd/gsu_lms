@@ -73,7 +73,7 @@ export function GradingView({
                         {submission.status === "GRADED" ? "Graded" : "Submitted"}
                       </Badge>
                       <Button asChild size="sm" variant="outline">
-                        <a href={`/media/${submission.fileKey}`} target="_blank" rel="noreferrer">
+                        <a href={`/submissions/${submission.id}`} target="_blank" rel="noreferrer">
                           <ExternalLink />
                           Open PDF
                         </a>

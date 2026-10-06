@@ -126,6 +126,9 @@ export function LearningExperience({
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
             <Link href={`/learn/${course.slug}/assignments`}>Assignments</Link>
           </Button>
+          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+            <Link href={`/learn/${course.slug}/chat`}>Chat</Link>
+          </Button>
           <div className="ml-auto flex items-center gap-3">
             {expiresAt ? (
               <Badge variant={daysLeft !== null && daysLeft <= 7 ? "destructive" : "secondary"}>

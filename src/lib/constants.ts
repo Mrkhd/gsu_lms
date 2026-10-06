@@ -1,4 +1,5 @@
 import {
+  Bell,
   BookOpen,
   Boxes,
   CreditCard,
@@ -75,7 +76,10 @@ export const INSTRUCTOR_NAV: NavSection[] = [
   { items: [{ label: "Dashboard", href: "/instructor", icon: LayoutDashboard }] },
   {
     label: "Teaching",
-    items: [{ label: "My Courses", href: "/instructor/courses", icon: BookOpen }],
+    items: [
+      { label: "My Courses", href: "/instructor/courses", icon: BookOpen },
+      { label: "Notifications", href: "/notifications", icon: Bell },
+    ],
   },
 ]
 
@@ -87,6 +91,7 @@ export const STUDENT_NAV: NavSection[] = [
       { label: "My Courses", href: "/dashboard/my-courses", icon: BookOpen },
       { label: "Semesters", href: "/dashboard/bundles", icon: Boxes },
       { label: "Orders", href: "/dashboard/orders", icon: CreditCard },
+      { label: "Notifications", href: "/notifications", icon: Bell },
       { label: "Profile", href: "/dashboard/profile", icon: Users },
     ],
   },
