@@ -10,6 +10,7 @@ import {
   CircleCheck,
   ClipboardList,
   FileText,
+  Home,
   Menu,
   MessageSquare,
   PlayCircle,
@@ -119,6 +120,11 @@ export function LearningExperience({
               <div className="h-full overflow-y-auto">{sidebar}</div>
             </SheetContent>
           </Sheet>
+          <Button asChild variant="ghost" size="icon" aria-label="Back to home">
+            <Link href="/">
+              <Home className="size-4" />
+            </Link>
+          </Button>
           <Link
             href={`/courses/${course.slug}`}
             className="truncate font-heading text-sm font-semibold hover:underline sm:text-base"
@@ -209,17 +215,24 @@ function LessonSidebar({
 }) {
   return (
     <div className="space-y-4 p-4">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
+        <Link
+          href="/"
+          className="flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
+        >
+          <Home className="size-4" />
+          Home
+        </Link>
         <Link
           href={`/learn/${courseSlug}/assignments`}
-          className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          className="flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
         >
           <ClipboardList className="size-4" />
           Assignments
         </Link>
         <Link
           href={`/learn/${courseSlug}/chat`}
-          className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          className="flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
         >
           <MessageSquare className="size-4" />
           Chat

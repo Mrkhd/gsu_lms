@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Home } from "lucide-react"
 
 import { ChatPanel } from "@/components/chat/chat-panel"
 import { AccessBlocked } from "@/components/learn/access-blocked"
@@ -48,12 +48,20 @@ export default async function CourseChatPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4 sm:p-6">
-      <Button asChild variant="ghost" size="sm">
-        <Link href={`/learn/${courseSlug}`}>
-          <ArrowLeft />
-          Back to course
-        </Link>
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="sm">
+          <Link href={`/learn/${courseSlug}`}>
+            <ArrowLeft />
+            Back to course
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/">
+            <Home />
+            Home
+          </Link>
+        </Button>
+      </div>
       <div>
         <h1 className="font-heading text-2xl font-semibold">Messages</h1>
         <p className="text-sm text-muted-foreground">{data.course.title}</p>
