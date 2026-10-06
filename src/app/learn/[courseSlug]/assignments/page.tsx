@@ -44,7 +44,7 @@ export default async function CourseAssignmentsPage({
           </Link>
         </Button>
         <Button asChild variant="ghost" size="sm">
-          <Link href="/">
+          <Link href="/dashboard">
             <Home />
             Home
           </Link>

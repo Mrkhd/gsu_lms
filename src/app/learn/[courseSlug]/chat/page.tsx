@@ -56,7 +56,7 @@ export default async function CourseChatPage({
           </Link>
         </Button>
         <Button asChild variant="ghost" size="sm">
-          <Link href="/">
+          <Link href="/dashboard">
             <Home />
             Home
           </Link>

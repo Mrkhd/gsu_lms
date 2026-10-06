@@ -120,8 +120,8 @@ export function LearningExperience({
               <div className="h-full overflow-y-auto">{sidebar}</div>
             </SheetContent>
           </Sheet>
-          <Button asChild variant="ghost" size="icon" aria-label="Back to home">
-            <Link href="/">
+          <Button asChild variant="ghost" size="icon" aria-label="Go to dashboard">
+            <Link href="/dashboard">
               <Home className="size-4" />
             </Link>
           </Button>
@@ -217,7 +217,7 @@ function LessonSidebar({
     <div className="space-y-4 p-4">
       <div className="grid grid-cols-3 gap-2">
         <Link
-          href="/"
+          href="/dashboard"
           className="flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
         >
           <Home className="size-4" />
