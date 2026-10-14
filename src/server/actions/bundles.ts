@@ -9,10 +9,12 @@ import {
   bundleCourses,
   bundleEnrollments,
   bundles,
+  enrollments,
   orderItems,
   programSemesters,
 } from "@/db/schema"
 import type { PublishStatus } from "@/db/types"
+import { syncBundleCourseEnrollments } from "@/lib/access"
 import { requireActionRole } from "@/lib/auth/server"
 import { bundleSchema } from "@/lib/validations"
 import { uniqueBundleSlug } from "@/lib/slugs"
@@ -120,6 +122,9 @@ export async function updateBundleAction(
       )
     }
 
+    // Keep already-enrolled students in sync with the new course list.
+    await syncBundleCourseEnrollments(bundleId)
+
     refreshBundle(bundleId, slug)
     return success("Bundle saved.")
   } catch (error) {
@@ -159,6 +164,7 @@ export async function deleteBundleAction(bundleId: string): Promise<ActionState>
 
     await db.delete(programSemesters).where(eq(programSemesters.bundleId, bundle.id))
     await db.update(orderItems).set({ bundleId: null }).where(eq(orderItems.bundleId, bundle.id))
+    await db.delete(enrollments).where(eq(enrollments.bundleId, bundle.id))
     await db.delete(bundleEnrollments).where(eq(bundleEnrollments.bundleId, bundle.id))
     await db.delete(bundleCourses).where(eq(bundleCourses.bundleId, bundle.id))
     await db.delete(bundles).where(eq(bundles.id, bundle.id))

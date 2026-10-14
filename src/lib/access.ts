@@ -1,8 +1,10 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, notInArray } from "drizzle-orm"
 
 import { getDb } from "@/db/client"
 import {
+  bundleCourses,
   bundleEnrollments,
+  bundles,
   courseLocks,
   enrollments,
   programEnrollments,
@@ -265,16 +267,69 @@ export async function grantBundleAccess(input: BundleGrantInput) {
       .where(eq(bundleEnrollments.id, existing.id))
   }
 
-  for (const courseId of input.courseIds) {
-    await grantCourseEnrollment({
-      studentId: input.studentId,
-      courseId,
-      source: input.source,
-      sourceId: input.sourceId ?? null,
-      bundleId: input.bundleId,
-      accessDurationDays: input.accessDurationDays,
-      startAt,
-    })
+  await syncBundleCourseEnrollments(input.bundleId)
+}
+
+/**
+ * Reconciles the derived per-course enrollments for a bundle with its current
+ * course list, so students enrolled in the bundle gain newly added courses and
+ * lose removed ones. Expiry/status mirror each student's bundle enrollment.
+ */
+export async function syncBundleCourseEnrollments(bundleId: string) {
+  const db = getDb()
+  const [bundle] = await db
+    .select({ id: bundles.id })
+    .from(bundles)
+    .where(eq(bundles.id, bundleId))
+    .limit(1)
+  if (!bundle) return
+
+  const links = await db
+    .select({ courseId: bundleCourses.courseId })
+    .from(bundleCourses)
+    .where(eq(bundleCourses.bundleId, bundleId))
+  const courseIds = links.map((link) => link.courseId)
+
+  // Drop derived enrollments for courses that are no longer in the bundle.
+  if (courseIds.length === 0) {
+    await db.delete(enrollments).where(eq(enrollments.bundleId, bundleId))
+  } else {
+    await db
+      .delete(enrollments)
+      .where(and(eq(enrollments.bundleId, bundleId), notInArray(enrollments.courseId, courseIds)))
+  }
+
+  const students = await db
+    .select()
+    .from(bundleEnrollments)
+    .where(eq(bundleEnrollments.bundleId, bundleId))
+
+  for (const student of students) {
+    for (const courseId of courseIds) {
+      const [existing] = await db
+        .select({ id: enrollments.id, bundleId: enrollments.bundleId })
+        .from(enrollments)
+        .where(and(eq(enrollments.studentId, student.studentId), eq(enrollments.courseId, courseId)))
+        .limit(1)
+
+      if (!existing) {
+        await db.insert(enrollments).values({
+          studentId: student.studentId,
+          courseId,
+          bundleId,
+          source: student.source,
+          sourceId: student.sourceId ?? null,
+          startedAt: student.startedAt,
+          expiresAt: student.expiresAt,
+          status: student.status,
+        })
+      } else if (existing.bundleId === bundleId) {
+        await db
+          .update(enrollments)
+          .set({ status: student.status, expiresAt: student.expiresAt, updatedAt: new Date() })
+          .where(eq(enrollments.id, existing.id))
+      }
+    }
   }
 }
 
