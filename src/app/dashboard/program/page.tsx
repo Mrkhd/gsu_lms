@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { CheckCircle2, Clock, ExternalLink, School } from "lucide-react"
+import { Clock, ExternalLink, School } from "lucide-react"
 
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -21,7 +21,7 @@ export default async function StudentProgramPage() {
     <div>
       <PageHeader
         title="My program"
-        description="Your degree progress. Tuition is charged per semester."
+        description="Your degree progress."
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/programs">
@@ -51,7 +51,7 @@ export default async function StudentProgramPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Semesters paid</span>
+                    <span className="text-muted-foreground">Semesters assigned</span>
                     <span className="font-medium">
                       {item.paidSemesters}/{item.totalSemesters}
                     </span>
@@ -68,19 +68,9 @@ export default async function StudentProgramPage() {
                         className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                              Semester {semester.number}
-                            </span>
-                            {semester.owned ? (
-                              <Badge variant="default">
-                                <CheckCircle2 className="size-3" />
-                                Paid
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">Unpaid</Badge>
-                            )}
-                          </div>
+                          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                            Semester {semester.number}
+                          </span>
                           <p className="font-medium">{semester.title}</p>
                           <p className="text-xs text-muted-foreground">
                             {semester.bundle._count.courses} courses
@@ -124,7 +114,7 @@ export default async function StudentProgramPage() {
         <EmptyState
           icon={School}
           title="You are not enrolled in a program"
-          description="Browse our degree programs and pay per semester to get started."
+          description="Browse our degree programs to get started."
           action={
             <Button asChild>
               <Link href="/programs">Browse programs</Link>
