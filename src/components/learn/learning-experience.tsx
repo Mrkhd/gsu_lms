@@ -104,8 +104,8 @@ export function LearningExperience({
   )
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
+    <div className="flex h-svh flex-col overflow-hidden">
+      <header className="z-30 shrink-0 border-b bg-background/80 backdrop-blur">
         <div className="flex h-14 items-center gap-3 px-3 sm:px-4">
           <Sheet>
             <SheetTrigger asChild>
@@ -153,11 +153,11 @@ export function LearningExperience({
         <Progress value={progress} className="h-0.5 rounded-none" />
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1">
         <aside className="hidden w-80 shrink-0 overflow-y-auto border-r lg:block">
           {sidebar}
         </aside>
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
             {current ? (
               <>
