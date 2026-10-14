@@ -20,7 +20,10 @@ export const bundleSchema = z.object({
     .transform((value) => (value ? value : undefined)),
   accessDurationDays: accessDurationField,
   status: courseStatusEnum.default("DRAFT"),
-  courseIds: z.array(z.string().min(1)).min(1, "Select at least one course"),
+  courseIds: z
+    .union([z.array(z.string().min(1)), z.string().min(1)])
+    .transform((value) => (Array.isArray(value) ? value : [value]).filter(Boolean))
+    .refine((value) => value.length > 0, { message: "Select at least one course" }),
 })
 
 export type BundleInput = z.infer<typeof bundleSchema>
