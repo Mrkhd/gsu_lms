@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm"
 import { getDb } from "@/db/client"
 import {
   bundleEnrollments,
+  courseLocks,
   enrollments,
   programEnrollments,
 } from "@/db/schema"
@@ -25,7 +26,7 @@ export function isEnrollmentActive(enrollment: EnrollmentWindow | null | undefin
   return true
 }
 
-export type AccessReason = "ACTIVE" | "EXPIRED" | "CANCELLED" | "NONE"
+export type AccessReason = "ACTIVE" | "EXPIRED" | "CANCELLED" | "LOCKED" | "NONE"
 
 export type CourseAccess = {
   hasAccess: boolean
@@ -57,6 +58,16 @@ export async function getCourseAccess(
     .where(and(eq(enrollments.studentId, studentId), eq(enrollments.courseId, courseId)))
     .limit(1)
 
+  const [lock] = await db
+    .select({ id: courseLocks.id })
+    .from(courseLocks)
+    .where(and(eq(courseLocks.studentId, studentId), eq(courseLocks.courseId, courseId)))
+    .limit(1)
+
+  if (lock) {
+    return { hasAccess: false, reason: "LOCKED", daysLeft: 0, enrollment: enrollment ?? null }
+  }
+
   if (!enrollment) {
     return { hasAccess: false, reason: "NONE", daysLeft: null, enrollment: null }
   }
@@ -72,6 +83,16 @@ export async function getCourseAccess(
     daysLeft: daysRemaining(enrollment.expiresAt),
     enrollment,
   }
+}
+
+/** Set of course ids explicitly locked for a student by an administrator. */
+export async function getCourseLocks(studentId: string): Promise<Set<string>> {
+  const db = getDb()
+  const rows = await db
+    .select({ courseId: courseLocks.courseId })
+    .from(courseLocks)
+    .where(eq(courseLocks.studentId, studentId))
+  return new Set(rows.map((row) => row.courseId))
 }
 
 export async function getBundleAccess(

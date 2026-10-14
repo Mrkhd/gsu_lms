@@ -1,6 +1,7 @@
 import { FolderTree, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { TableFilters } from "@/components/admin/table-filters"
 import { CategoryDialog } from "@/components/admin/category-dialog"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -19,9 +20,15 @@ import { deleteCategoryAction } from "@/server/actions/categories"
 
 export const metadata = { title: "Categories" }
 
-export default async function CategoriesPage() {
+export default async function CategoriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   await requireAdmin()
-  const categories = await getCategories()
+  const params = await searchParams
+  const search = typeof params.q === "string" ? params.q : undefined
+  const categories = await getCategories({ search })
 
   return (
     <div>
@@ -39,6 +46,8 @@ export default async function CategoriesPage() {
           />
         }
       />
+
+      <TableFilters basePath="/admin/categories" searchPlaceholder="Search categories" />
 
       {categories.length > 0 ? (
         <div className="overflow-hidden rounded-xl border bg-background">

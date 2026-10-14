@@ -18,7 +18,6 @@ export const bundleSchema = z.object({
     .optional()
     .or(z.literal(""))
     .transform((value) => (value ? value : undefined)),
-  price: z.coerce.number().min(0, "Price cannot be negative").max(1_000_000),
   accessDurationDays: accessDurationField,
   status: courseStatusEnum.default("DRAFT"),
   courseIds: z.array(z.string().min(1)).min(1, "Select at least one course"),

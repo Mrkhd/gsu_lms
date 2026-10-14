@@ -24,7 +24,7 @@ export default async function ProgramsPage({
       <div className="space-y-2">
         <h1 className="font-heading text-3xl font-semibold tracking-tight">Degree programs</h1>
         <p className="text-muted-foreground">
-          {result.total} {result.total === 1 ? "program" : "programs"} · pay per semester
+          {result.total} {result.total === 1 ? "program" : "programs"} available
         </p>
       </div>
 

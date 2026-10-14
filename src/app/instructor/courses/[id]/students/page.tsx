@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import type { EnrollmentStatus } from "@/db/types"
 import { ArrowLeft, Users } from "lucide-react"
 
+import { ENROLLMENT_STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
 import { StatusBadge } from "@/components/status-badge"
@@ -28,11 +30,20 @@ export const metadata = { title: "Course students" }
 
 export default async function InstructorCourseStudentsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const user = await requireInstructor()
   const { id } = await params
+  const query = await searchParams
+  const search = typeof query.q === "string" ? query.q : undefined
+  const status =
+    typeof query.status === "string" &&
+    ["ACTIVE", "EXPIRED", "CANCELLED"].includes(query.status)
+      ? (query.status as EnrollmentStatus)
+      : undefined
 
   const db = getDb()
   const [course] = await db
@@ -43,7 +54,7 @@ export default async function InstructorCourseStudentsPage({
   if (!course) notFound()
   if (!canManageCourse(user, course)) notFound()
 
-  const students = await getCourseStudents(course.id)
+  const students = await getCourseStudents(course.id, { search, status })
 
   return (
     <div>
@@ -56,6 +67,14 @@ export default async function InstructorCourseStudentsPage({
       <PageHeader
         title="Enrolled students"
         description={`${students.length} students in ${course.title}`}
+      />
+
+      <TableFilters
+        basePath={`/instructor/courses/${course.id}/students`}
+        searchPlaceholder="Search students"
+        selects={[
+          { key: "status", placeholder: "All statuses", options: ENROLLMENT_STATUS_OPTIONS },
+        ]}
       />
 
       {students.length > 0 ? (

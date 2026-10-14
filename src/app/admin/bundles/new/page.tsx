@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/dashboard-shell"
 import { Button } from "@/components/ui/button"
 import { getCourseOptions } from "@/db/options"
 import { requireAdmin } from "@/lib/auth/server"
-import { toNumber } from "@/lib/format"
 
 export const metadata = { title: "New bundle" }
 
@@ -36,11 +35,7 @@ export default async function NewBundlePage() {
           status: "DRAFT",
           courseIds: [],
         }}
-        courses={courses.map((course) => ({
-          id: course.id,
-          title: course.title,
-          price: toNumber(course.price),
-        }))}
+        courses={courses.map((course) => ({ id: course.id, title: course.title }))}
       />
     </div>
   )

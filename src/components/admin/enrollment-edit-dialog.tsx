@@ -24,17 +24,21 @@ import {
 } from "@/components/ui/select"
 import { ACCESS_DURATION_PRESETS } from "@/lib/constants"
 import { useActionForm } from "@/hooks/use-action-form"
-import { updateEnrollmentAction } from "@/server/actions/enrollments"
+import { updateSemesterEnrollmentAction } from "@/server/actions/enrollments"
 
 export function EnrollmentEditDialog({
-  enrollment,
+  studentId,
+  bundleId,
+  status,
   trigger,
 }: {
-  enrollment: { id: string; status: string }
+  studentId: string
+  bundleId: string
+  status: string
   trigger: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
-  const { state, pending, onSubmit } = useActionForm(updateEnrollmentAction, {
+  const { state, pending, onSubmit } = useActionForm(updateSemesterEnrollmentAction, {
     onSuccess: () => setOpen(false),
   })
 
@@ -43,17 +47,16 @@ export function EnrollmentEditDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit enrollment</DialogTitle>
-          <DialogDescription>
-            Changing the duration resets the expiry from today.
-          </DialogDescription>
+          <DialogTitle>Edit semester enrollment</DialogTitle>
+          <DialogDescription>Changing the duration resets the expiry from today.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <input type="hidden" name="enrollmentId" value={enrollment.id} />
+          <input type="hidden" name="studentId" value={studentId} />
+          <input type="hidden" name="bundleId" value={bundleId} />
           <FormError state={state} />
           <div className="space-y-2">
             <Label>Status</Label>
-            <Select name="status" defaultValue={enrollment.status}>
+            <Select name="status" defaultValue={status}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

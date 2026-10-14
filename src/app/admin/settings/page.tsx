@@ -1,56 +1,24 @@
-import { CreditCard, Clock, Database } from "lucide-react"
+import { Clock, Database } from "lucide-react"
 
 import { PageHeader } from "@/components/dashboard-shell"
-import { StatusBadge } from "@/components/status-badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ACCESS_DURATION_PRESETS } from "@/lib/constants"
 import { env } from "@/lib/env"
-import { getPaymentProvider } from "@/lib/payments"
 
 export const metadata = { title: "Settings" }
 
 export default function SettingsPage() {
-  const provider = getPaymentProvider()
-
   return (
     <div>
-      <PageHeader
-        title="Settings"
-        description="Platform configuration for this MVP."
-      />
+      <PageHeader title="Settings" description="Platform configuration." />
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CreditCard className="size-4 text-muted-foreground" />
-              <CardTitle>Payments</CardTitle>
-            </div>
-            <CardDescription>
-              Payments are abstracted behind a provider interface. Swap providers without touching
-              the rest of the app.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Active provider</span>
-              <StatusBadge status={provider.name.toUpperCase()} />
-            </div>
-            <p className="text-muted-foreground">
-              Set <code className="rounded bg-muted px-1">PAYMENT_PROVIDER</code> in your environment
-              to change it. The mock provider approves checkouts instantly.
-            </p>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Clock className="size-4 text-muted-foreground" />
               <CardTitle>Access durations</CardTitle>
             </div>
-            <CardDescription>
-              Available windows when creating courses and bundles.
-            </CardDescription>
+            <CardDescription>Available windows when creating courses and semesters.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="flex flex-wrap gap-2">
@@ -67,7 +35,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Database className="size-4 text-muted-foreground" />

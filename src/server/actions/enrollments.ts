@@ -6,15 +6,16 @@ import { and, eq } from "drizzle-orm"
 import { getDb } from "@/db/client"
 import {
   bundleCourses,
-  bundles,
+  bundleEnrollments,
+  courseLocks,
   enrollments,
   programSemesters,
   users,
 } from "@/db/schema"
-import { grantBundleAccess, grantCourseEnrollment, grantProgramEnrollment } from "@/lib/access"
+import { grantBundleAccess, grantProgramEnrollment } from "@/lib/access"
 import { requireActionRole } from "@/lib/auth/server"
 import { addDays } from "@/lib/format"
-import { grantEnrollmentSchema, updateEnrollmentSchema } from "@/lib/validations"
+import { grantEnrollmentSchema, updateSemesterEnrollmentSchema } from "@/lib/validations"
 import {
   failure,
   formDataToObject,
@@ -24,10 +25,11 @@ import {
   type ActionState,
 } from "@/lib/action-utils"
 
-function refreshEnrollments() {
+function refreshEnrollments(studentId?: string) {
   revalidatePath("/admin/enrollments")
   revalidatePath("/admin/students")
   revalidatePath("/dashboard")
+  if (studentId) revalidatePath(`/admin/students/${studentId}`)
 }
 
 export async function grantEnrollmentAction(
@@ -37,7 +39,7 @@ export async function grantEnrollmentAction(
   await requireActionRole("ADMIN")
   const parsed = grantEnrollmentSchema.safeParse(formDataToObject(formData))
   if (!parsed.success) return fromZodError(parsed.error)
-  const { studentId, courseId, bundleId, accessDurationDays } = parsed.data
+  const { studentId, programId, bundleId, accessDurationDays } = parsed.data
 
   try {
     const db = getDb()
@@ -48,104 +50,81 @@ export async function grantEnrollmentAction(
       .limit(1)
     if (!student || student.role !== "STUDENT") return failure("Select a valid student.")
 
-    if (bundleId) {
-      const [bundle] = await db
-        .select({ id: bundles.id })
-        .from(bundles)
-        .where(eq(bundles.id, bundleId))
-        .limit(1)
-      if (!bundle) return failure("Bundle not found.")
-      const links = await db
-        .select({ courseId: bundleCourses.courseId })
-        .from(bundleCourses)
-        .where(eq(bundleCourses.bundleId, bundleId))
+    const [semester] = await db
+      .select({ number: programSemesters.number })
+      .from(programSemesters)
+      .where(
+        and(eq(programSemesters.programId, programId), eq(programSemesters.bundleId, bundleId))
+      )
+      .limit(1)
+    if (!semester) return failure("That semester is not part of the selected program.")
 
-      await grantBundleAccess({
-        studentId,
-        bundleId,
-        courseIds: links.map((l) => l.courseId),
-        source: "ADMIN_GRANT",
-        accessDurationDays,
-      })
+    const links = await db
+      .select({ courseId: bundleCourses.courseId })
+      .from(bundleCourses)
+      .where(eq(bundleCourses.bundleId, bundleId))
 
-      const [semester] = await db
-        .select({ programId: programSemesters.programId, number: programSemesters.number })
-        .from(programSemesters)
-        .where(eq(programSemesters.bundleId, bundleId))
-        .limit(1)
-      if (semester) {
-        await grantProgramEnrollment({
-          studentId,
-          programId: semester.programId,
-          currentSemester: semester.number,
-        })
-      }
-    } else if (courseId) {
-      await grantCourseEnrollment({ studentId, courseId, source: "ADMIN_GRANT", accessDurationDays })
-    }
+    await grantBundleAccess({
+      studentId,
+      bundleId,
+      courseIds: links.map((l) => l.courseId),
+      source: "ADMIN_GRANT",
+      accessDurationDays,
+    })
 
-    refreshEnrollments()
-    return success("Enrollment granted.")
+    await grantProgramEnrollment({
+      studentId,
+      programId,
+      currentSemester: semester.number,
+    })
+
+    refreshEnrollments(studentId)
+    return success("Student assigned to the program and semester.")
   } catch (error) {
     return toActionError(error)
   }
 }
 
-export async function updateEnrollmentAction(
+export async function updateSemesterEnrollmentAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
   await requireActionRole("ADMIN")
-  const enrollmentId = String(formData.get("enrollmentId") ?? "")
-  const parsed = updateEnrollmentSchema.safeParse(formDataToObject(formData))
+  const studentId = String(formData.get("studentId") ?? "")
+  const bundleId = String(formData.get("bundleId") ?? "")
+  const parsed = updateSemesterEnrollmentSchema.safeParse(formDataToObject(formData))
   if (!parsed.success) return fromZodError(parsed.error)
+  if (!studentId || !bundleId) return failure("Missing enrollment.")
 
   try {
     const db = getDb()
-    const [enrollment] = await db
-      .select({ id: enrollments.id })
-      .from(enrollments)
-      .where(eq(enrollments.id, enrollmentId))
-      .limit(1)
-    if (!enrollment) return failure("Enrollment not found.")
-
     const { status, accessDurationDays } = parsed.data
+    const expiresAt =
+      status === "ACTIVE"
+        ? accessDurationDays === null
+          ? null
+          : addDays(new Date(), accessDurationDays)
+        : undefined
+
+    await db
+      .update(bundleEnrollments)
+      .set({ status, expiresAt, updatedAt: new Date() })
+      .where(
+        and(eq(bundleEnrollments.studentId, studentId), eq(bundleEnrollments.bundleId, bundleId))
+      )
     await db
       .update(enrollments)
-      .set({
-        status,
-        expiresAt:
-          status === "ACTIVE"
-            ? accessDurationDays === null
-              ? null
-              : addDays(new Date(), accessDurationDays)
-            : undefined,
-        updatedAt: new Date(),
-      })
-      .where(eq(enrollments.id, enrollmentId))
-    refreshEnrollments()
-    return success("Enrollment updated.")
+      .set({ status, expiresAt, updatedAt: new Date() })
+      .where(and(eq(enrollments.studentId, studentId), eq(enrollments.bundleId, bundleId)))
+
+    refreshEnrollments(studentId)
+    return success("Semester enrollment updated.")
   } catch (error) {
     return toActionError(error)
   }
 }
 
-export async function revokeEnrollmentAction(enrollmentId: string): Promise<ActionState> {
-  try {
-    await requireActionRole("ADMIN")
-    const db = getDb()
-    await db
-      .update(enrollments)
-      .set({ status: "CANCELLED", updatedAt: new Date() })
-      .where(eq(enrollments.id, enrollmentId))
-    refreshEnrollments()
-    return success("Enrollment revoked.")
-  } catch (error) {
-    return toActionError(error)
-  }
-}
-
-export async function revokeBundleEnrollmentAction(
+export async function revokeSemesterEnrollmentAction(
   studentId: string,
   bundleId: string
 ): Promise<ActionState> {
@@ -153,11 +132,62 @@ export async function revokeBundleEnrollmentAction(
     await requireActionRole("ADMIN")
     const db = getDb()
     await db
+      .update(bundleEnrollments)
+      .set({ status: "CANCELLED", updatedAt: new Date() })
+      .where(
+        and(eq(bundleEnrollments.studentId, studentId), eq(bundleEnrollments.bundleId, bundleId))
+      )
+    await db
       .update(enrollments)
       .set({ status: "CANCELLED", updatedAt: new Date() })
       .where(and(eq(enrollments.studentId, studentId), eq(enrollments.bundleId, bundleId)))
-    refreshEnrollments()
-    return success("Bundle access revoked.")
+    refreshEnrollments(studentId)
+    return success("Semester access revoked.")
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+export async function lockCourseAction(
+  studentId: string,
+  courseId: string,
+  reason?: string
+): Promise<ActionState> {
+  try {
+    const admin = await requireActionRole("ADMIN")
+    const db = getDb()
+    const [existing] = await db
+      .select({ id: courseLocks.id })
+      .from(courseLocks)
+      .where(and(eq(courseLocks.studentId, studentId), eq(courseLocks.courseId, courseId)))
+      .limit(1)
+    if (!existing) {
+      await db.insert(courseLocks).values({
+        studentId,
+        courseId,
+        lockedBy: admin.id,
+        reason: reason?.trim() ? reason.trim() : null,
+      })
+    }
+    refreshEnrollments(studentId)
+    return success("Course locked for this student.")
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+export async function unlockCourseAction(
+  studentId: string,
+  courseId: string
+): Promise<ActionState> {
+  try {
+    await requireActionRole("ADMIN")
+    const db = getDb()
+    await db
+      .delete(courseLocks)
+      .where(and(eq(courseLocks.studentId, studentId), eq(courseLocks.courseId, courseId)))
+    refreshEnrollments(studentId)
+    return success("Course unlocked for this student.")
   } catch (error) {
     return toActionError(error)
   }

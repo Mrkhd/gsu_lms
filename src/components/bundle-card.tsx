@@ -5,25 +5,19 @@ import { Boxes } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Thumbnail } from "@/components/thumbnail"
-import { formatPrice, toNumber } from "@/lib/format"
+
 
 type BundleCardBundle = {
   slug: string
   title: string
   shortDescription?: string | null
   thumbnailUrl?: string | null
-  price: number | string
   _count?: { courses?: number }
-  courses?: { course: { price: number | string } }[]
+  courses?: { course: unknown }[]
 }
 
 export function BundleCard({ bundle, href }: { bundle: BundleCardBundle; href?: string }) {
   const courseCount = bundle._count?.courses ?? bundle.courses?.length ?? 0
-  const individualValue = (bundle.courses ?? []).reduce(
-    (sum, item) => sum + toNumber(item.course.price),
-    0
-  )
-  const showValue = individualValue > toNumber(bundle.price)
 
   return (
     <Card className="h-full gap-0 pt-0 transition-shadow hover:ring-foreground/20">
@@ -49,15 +43,7 @@ export function BundleCard({ bundle, href }: { bundle: BundleCardBundle; href?: 
           <p className="line-clamp-2 text-sm text-muted-foreground">{bundle.shortDescription}</p>
         ) : null}
       </CardContent>
-      <CardFooter className="justify-between">
-        <div className="flex items-baseline gap-2">
-          <span className="font-heading text-base font-semibold">{formatPrice(bundle.price)}</span>
-          {showValue ? (
-            <span className="text-xs text-muted-foreground line-through">
-              {formatPrice(individualValue)}
-            </span>
-          ) : null}
-        </div>
+      <CardFooter className="justify-end">
         <Link
           href={href ?? `/bundles/${bundle.slug}`}
           className="text-sm font-medium text-primary hover:underline"

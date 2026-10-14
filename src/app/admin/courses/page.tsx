@@ -3,6 +3,7 @@ import type { PublishStatus } from "@/db/types"
 import { BookOpen, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
 import { StatusBadge } from "@/components/status-badge"
@@ -16,18 +17,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { requireAdmin } from "@/lib/auth/server"
-import { formatPrice, formatShortDate, fullName } from "@/lib/format"
+import { formatShortDate, fullName } from "@/lib/format"
 import { getAdminCourses } from "@/lib/queries"
 import { deleteCourseAction, setCourseStatusAction } from "@/server/actions/courses"
 
 export const metadata = { title: "Courses" }
-
-const FILTERS: { label: string; value?: PublishStatus }[] = [
-  { label: "All" },
-  { label: "Draft", value: "DRAFT" },
-  { label: "Published", value: "PUBLISHED" },
-  { label: "Archived", value: "ARCHIVED" },
-]
 
 export default async function AdminCoursesPage({
   searchParams,
@@ -60,17 +54,11 @@ export default async function AdminCoursesPage({
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        {FILTERS.map((filter) => {
-          const active = filter.value === status || (!filter.value && !status)
-          const href = filter.value ? `/admin/courses?status=${filter.value}` : "/admin/courses"
-          return (
-            <Button key={filter.label} asChild size="sm" variant={active ? "default" : "outline"}>
-              <Link href={href}>{filter.label}</Link>
-            </Button>
-          )
-        })}
-      </div>
+      <TableFilters
+        basePath="/admin/courses"
+        searchPlaceholder="Search courses"
+        selects={[{ key: "status", placeholder: "All statuses", options: STATUS_OPTIONS }]}
+      />
 
       {courses.length > 0 ? (
         <div className="overflow-hidden rounded-xl border bg-background">
@@ -82,7 +70,6 @@ export default async function AdminCoursesPage({
                 <TableHead>Instructor</TableHead>
                 <TableHead>Lessons</TableHead>
                 <TableHead>Students</TableHead>
-                <TableHead>Price</TableHead>
                 <TableHead>Updated</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -90,11 +77,14 @@ export default async function AdminCoursesPage({
             <TableBody>
               {courses.map((course) => (
                 <TableRow key={course.id}>
-                  <TableCell className="max-w-56">
-                    <Link href={`/admin/courses/${course.id}`} className="font-medium hover:underline">
+                  <TableCell className="max-w-56 overflow-hidden">
+                    <Link
+                      href={`/admin/courses/${course.id}`}
+                      className="block truncate font-medium hover:underline"
+                    >
                       {course.title}
                     </Link>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="truncate text-xs text-muted-foreground">
                       {course.category?.name ?? "Uncategorised"}
                     </p>
                   </TableCell>
@@ -106,7 +96,6 @@ export default async function AdminCoursesPage({
                   </TableCell>
                   <TableCell>{course._count.lessons}</TableCell>
                   <TableCell>{course._count.enrollments}</TableCell>
-                  <TableCell>{formatPrice(course.price)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatShortDate(course.updatedAt)}
                   </TableCell>

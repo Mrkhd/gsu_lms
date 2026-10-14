@@ -1,7 +1,9 @@
 import Link from "next/link"
+import type { EnrollmentStatus } from "@/db/types"
 import { TicketCheck, UserPlus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ENROLLMENT_STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
 import { EnrollmentEditDialog } from "@/components/admin/enrollment-edit-dialog"
@@ -16,21 +18,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { getBundleOptions, getCourseOptions } from "@/db/options"
 import { requireAdmin } from "@/lib/auth/server"
 import { formatDate, fullName } from "@/lib/format"
-import { getAdminEnrollments, getStudents } from "@/lib/queries"
-import { revokeEnrollmentAction } from "@/server/actions/enrollments"
+import {
+  getAdminSemesterEnrollments,
+  getProgramsWithSemesters,
+  getStudents,
+} from "@/lib/queries"
+import { revokeSemesterEnrollmentAction } from "@/server/actions/enrollments"
 
 export const metadata = { title: "Enrollments" }
 
-export default async function EnrollmentsPage() {
+export default async function EnrollmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   await requireAdmin()
-  const [enrollments, students, courses, bundles] = await Promise.all([
-    getAdminEnrollments(),
+  const params = await searchParams
+  const search = typeof params.q === "string" ? params.q : undefined
+  const status =
+    typeof params.status === "string" &&
+    ["ACTIVE", "EXPIRED", "CANCELLED"].includes(params.status)
+      ? (params.status as EnrollmentStatus)
+      : undefined
+  const [enrollments, students, programs] = await Promise.all([
+    getAdminSemesterEnrollments({ search, status }),
     getStudents(),
-    getCourseOptions(),
-    getBundleOptions(),
+    getProgramsWithSemesters(),
   ])
 
   const studentOptions = students.map((student) => ({
@@ -42,20 +57,27 @@ export default async function EnrollmentsPage() {
     <div>
       <PageHeader
         title="Enrollments"
-        description="The source of truth for course access."
+        description="Semester assignments are the source of truth for course access."
         actions={
           <EnrollmentGrantDialog
             students={studentOptions}
-            courses={courses}
-            bundles={bundles}
+            programs={programs}
             trigger={
               <Button size="sm">
                 <UserPlus />
-                Grant access
+                Assign to program
               </Button>
             }
           />
         }
+      />
+
+      <TableFilters
+        basePath="/admin/enrollments"
+        searchPlaceholder="Search students"
+        selects={[
+          { key: "status", placeholder: "All statuses", options: ENROLLMENT_STATUS_OPTIONS },
+        ]}
       />
 
       {enrollments.length > 0 ? (
@@ -64,7 +86,7 @@ export default async function EnrollmentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
-                <TableHead>Course</TableHead>
+                <TableHead>Semester</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Started</TableHead>
@@ -78,12 +100,9 @@ export default async function EnrollmentsPage() {
                   <TableCell className="max-w-40 truncate">
                     {fullName(enrollment.student.profile, enrollment.student.email)}
                   </TableCell>
-                  <TableCell className="max-w-48 truncate">
-                    <Link
-                      href={`/courses/${enrollment.course.slug}`}
-                      className="hover:underline"
-                    >
-                      {enrollment.course.title}
+                  <TableCell className="max-w-56 truncate">
+                    <Link href={`/bundles/${enrollment.bundle.slug}`} className="hover:underline">
+                      {enrollment.bundle.title}
                     </Link>
                   </TableCell>
                   <TableCell>
@@ -100,8 +119,13 @@ export default async function EnrollmentsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/admin/students/${enrollment.studentId}`}>Manage</Link>
+                      </Button>
                       <EnrollmentEditDialog
-                        enrollment={{ id: enrollment.id, status: enrollment.status }}
+                        studentId={enrollment.studentId}
+                        bundleId={enrollment.bundleId}
+                        status={enrollment.status}
                         trigger={
                           <Button variant="ghost" size="sm">
                             Edit
@@ -112,10 +136,15 @@ export default async function EnrollmentsPage() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive"
-                        action={revokeEnrollmentAction.bind(null, enrollment.id)}
+                        action={revokeSemesterEnrollmentAction.bind(
+                          null,
+                          enrollment.studentId,
+                          enrollment.bundleId
+                        )}
                         confirm={{
-                          title: "Revoke this enrollment?",
-                          description: "The student will lose access immediately.",
+                          title: "Revoke this semester?",
+                          description:
+                            "The student will lose access to every course in the semester immediately.",
                           confirmLabel: "Revoke",
                         }}
                       >
@@ -129,7 +158,7 @@ export default async function EnrollmentsPage() {
           </Table>
         </div>
       ) : (
-        <EmptyState icon={TicketCheck} title="No enrollments yet" />
+        <EmptyState icon={TicketCheck} title="No semester enrollments yet" />
       )}
     </div>
   )

@@ -1,11 +1,11 @@
 import { z } from "zod"
 
-import { readEnv } from "./cf-env"
+import { readEnv } from "./runtime-env"
 
 /**
  * Environment configuration, validated with Zod.
  *
- * Values come from Cloudflare bindings/secrets at runtime (see `cf-env.ts`),
+ * Values come from the process environment at runtime (see `runtime-env.ts`),
  * with sensible development defaults so tooling can run without full config.
  */
 const envSchema = z.object({

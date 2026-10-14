@@ -47,7 +47,7 @@ export async function GET(
   headers.set("Content-Type", "application/pdf")
   headers.set("Content-Disposition", `inline; filename="${submission.fileName.replace(/"/g, "")}"`)
   headers.set("Cache-Control", "private, max-age=60")
-  headers.set("ETag", object.httpEtag)
+  headers.set("ETag", object.etag)
 
   return new Response(object.body as unknown as BodyInit, { headers })
 }

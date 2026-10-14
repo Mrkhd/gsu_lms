@@ -1,7 +1,9 @@
 import Link from "next/link"
+import type { PublishStatus } from "@/db/types"
 import { Plus, School } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
 import { StatusBadge } from "@/components/status-badge"
@@ -15,15 +17,26 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { requireAdmin } from "@/lib/auth/server"
-import { formatPrice, formatShortDate, toNumber } from "@/lib/format"
+import { formatShortDate } from "@/lib/format"
 import { getAdminPrograms } from "@/lib/queries"
 import { deleteProgramAction, setProgramStatusAction } from "@/server/actions/programs"
 
 export const metadata = { title: "Programs" }
 
-export default async function AdminProgramsPage() {
+export default async function AdminProgramsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   await requireAdmin()
-  const programs = await getAdminPrograms()
+  const params = await searchParams
+  const search = typeof params.q === "string" ? params.q : undefined
+  const status =
+    typeof params.status === "string" &&
+    ["DRAFT", "PUBLISHED", "ARCHIVED"].includes(params.status)
+      ? (params.status as PublishStatus)
+      : undefined
+  const programs = await getAdminPrograms({ search, status })
 
   return (
     <div>
@@ -40,6 +53,12 @@ export default async function AdminProgramsPage() {
         }
       />
 
+      <TableFilters
+        basePath="/admin/programs"
+        searchPlaceholder="Search programs"
+        selects={[{ key: "status", placeholder: "All statuses", options: STATUS_OPTIONS }]}
+      />
+
       {programs.length > 0 ? (
         <div className="overflow-hidden rounded-xl border bg-background">
           <Table>
@@ -49,27 +68,22 @@ export default async function AdminProgramsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Semesters</TableHead>
                 <TableHead>Enrollments</TableHead>
-                <TableHead>Total tuition</TableHead>
                 <TableHead>Updated</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {programs.map((program) => {
-                const total = program.semesters.reduce(
-                  (sum, semester) => sum + toNumber(semester.bundle.price),
-                  0
-                )
                 return (
                   <TableRow key={program.id}>
-                    <TableCell className="max-w-56">
+                    <TableCell className="max-w-56 overflow-hidden">
                       <Link
                         href={`/admin/programs/${program.id}`}
-                        className="font-medium hover:underline"
+                        className="block truncate font-medium hover:underline"
                       >
                         {program.title}
                       </Link>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground">
                         {program.code ?? program.level}
                       </p>
                     </TableCell>
@@ -80,7 +94,6 @@ export default async function AdminProgramsPage() {
                       {program._count.semesters}/{program.semesterCount}
                     </TableCell>
                     <TableCell>{program._count.enrollments}</TableCell>
-                    <TableCell>{formatPrice(total)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatShortDate(program.updatedAt)}
                     </TableCell>

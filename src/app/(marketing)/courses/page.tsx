@@ -4,9 +4,14 @@ import { CatalogFilters } from "@/components/catalog-filters"
 import { CourseCard } from "@/components/course-card"
 import { EmptyState } from "@/components/empty-state"
 import { PaginationControls } from "@/components/pagination-controls"
-import { getCategories, getPublishedCourses, type CatalogSort } from "@/lib/queries"
+import {
+  getCategories,
+  getProgramOptions,
+  getPublishedCourses,
+  type CatalogSort,
+} from "@/lib/queries"
 
-const SORTS: CatalogSort[] = ["newest", "popular", "price-asc", "price-desc"]
+const SORTS: CatalogSort[] = ["newest", "popular"]
 
 export const metadata = { title: "Courses" }
 
@@ -20,13 +25,15 @@ export default async function CoursesPage({
 
   const search = get("q")
   const categorySlug = get("category")
+  const programSlug = get("program")
   const sortParam = get("sort")
   const sort = SORTS.includes(sortParam as CatalogSort) ? (sortParam as CatalogSort) : "newest"
   const page = Math.max(1, Number(get("page") ?? "1") || 1)
 
-  const [result, categories] = await Promise.all([
-    getPublishedCourses({ search, categorySlug, sort, page }),
+  const [result, categories, programs] = await Promise.all([
+    getPublishedCourses({ search, categorySlug, programSlug, sort, page }),
     getCategories(),
+    getProgramOptions(),
   ])
 
   return (
@@ -38,7 +45,7 @@ export default async function CoursesPage({
         </p>
       </div>
 
-      <CatalogFilters basePath="/courses" categories={categories} />
+      <CatalogFilters basePath="/courses" categories={categories} programs={programs} />
 
       {result.items.length > 0 ? (
         <>
@@ -51,7 +58,7 @@ export default async function CoursesPage({
             basePath="/courses"
             page={result.page}
             totalPages={result.totalPages}
-            params={{ q: search, category: categorySlug, sort }}
+            params={{ q: search, category: categorySlug, program: programSlug, sort }}
           />
         </>
       ) : (

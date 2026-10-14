@@ -12,7 +12,6 @@ import { getDb } from "@/db/client"
 import { getBundleOptions } from "@/db/options"
 import { programs } from "@/db/schema"
 import { requireAdmin } from "@/lib/auth/server"
-import { toNumber } from "@/lib/format"
 import { setProgramStatusAction } from "@/server/actions/programs"
 
 export const metadata = { title: "Edit program" }
@@ -88,11 +87,7 @@ export default async function EditProgramPage({ params }: { params: Promise<{ id
           status: program.status,
         }}
         defaultSemesters={defaultSemesters}
-        bundles={bundles.map((bundle) => ({
-          id: bundle.id,
-          title: bundle.title,
-          price: toNumber(bundle.price),
-        }))}
+        bundles={bundles.map((bundle) => ({ id: bundle.id, title: bundle.title }))}
       />
     </div>
   )

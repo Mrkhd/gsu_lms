@@ -1,6 +1,8 @@
+import type { UserStatus } from "@/db/types"
 import { Plus, Users } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { TableFilters, USER_STATUS_OPTIONS } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
 import { StatusBadge } from "@/components/status-badge"
@@ -22,9 +24,19 @@ import { deleteUserAction, updateUserRoleAction, updateUserStatusAction } from "
 
 export const metadata = { title: "Instructors" }
 
-export default async function InstructorsPage() {
+export default async function InstructorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const admin = await requireAdmin()
-  const instructors = await getInstructors()
+  const params = await searchParams
+  const search = typeof params.q === "string" ? params.q : undefined
+  const status =
+    typeof params.status === "string" && ["ACTIVE", "SUSPENDED"].includes(params.status)
+      ? (params.status as UserStatus)
+      : undefined
+  const instructors = await getInstructors({ search, status })
 
   return (
     <div>
@@ -43,6 +55,12 @@ export default async function InstructorsPage() {
             }
           />
         }
+      />
+
+      <TableFilters
+        basePath="/admin/instructors"
+        searchPlaceholder="Search instructors"
+        selects={[{ key: "status", placeholder: "All statuses", options: USER_STATUS_OPTIONS }]}
       />
 
       {instructors.length > 0 ? (

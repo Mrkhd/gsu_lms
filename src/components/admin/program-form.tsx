@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ACCESS_DURATION_PRESETS } from "@/lib/constants"
-import { formatPrice } from "@/lib/format"
 import { idleState, type ActionState } from "@/lib/action-utils"
 import { createProgramAction, updateProgramAction } from "@/server/actions/programs"
 
@@ -56,7 +55,7 @@ export function ProgramForm({
   programId?: string
   defaultValues: ProgramFormValues
   defaultSemesters: Record<number, SemesterMapping>
-  bundles: { id: string; title: string; price: number }[]
+  bundles: { id: string; title: string }[]
 }) {
   const form = useForm<ProgramFormValues>({ defaultValues })
   const [mappings, setMappings] = React.useState<Record<number, SemesterMapping>>(defaultSemesters)
@@ -331,7 +330,7 @@ export function ProgramForm({
                         <SelectItem value="none">No package</SelectItem>
                         {bundles.map((bundle) => (
                           <SelectItem key={bundle.id} value={bundle.id}>
-                            {bundle.title} · {formatPrice(bundle.price)}
+                            {bundle.title}
                           </SelectItem>
                         ))}
                       </SelectContent>

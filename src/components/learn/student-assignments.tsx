@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { CheckCircle2, Clock, ExternalLink, FileText, Loader2, Upload } from "lucide-react"
+import { CheckCircle2, Clock, FileText, Loader2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"

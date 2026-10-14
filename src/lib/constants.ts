@@ -2,13 +2,12 @@ import {
   Bell,
   BookOpen,
   Boxes,
-  CreditCard,
+  ClipboardList,
   FolderTree,
   GraduationCap,
   LayoutDashboard,
   School,
   Settings,
-  ShoppingCart,
   TicketCheck,
   Users,
   type LucideIcon,
@@ -50,6 +49,7 @@ export const ADMIN_NAV: NavSection[] = [
       { label: "Courses", href: "/admin/courses", icon: BookOpen },
       { label: "Semester packages", href: "/admin/bundles", icon: Boxes },
       { label: "Categories", href: "/admin/categories", icon: FolderTree },
+      { label: "Forms", href: "/admin/forms", icon: ClipboardList },
     ],
   },
   {
@@ -61,10 +61,7 @@ export const ADMIN_NAV: NavSection[] = [
   },
   {
     label: "Commerce",
-    items: [
-      { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
-      { label: "Enrollments", href: "/admin/enrollments", icon: TicketCheck },
-    ],
+    items: [{ label: "Enrollments", href: "/admin/enrollments", icon: TicketCheck }],
   },
   {
     label: "System",
@@ -90,7 +87,6 @@ export const STUDENT_NAV: NavSection[] = [
       { label: "My Program", href: "/dashboard/program", icon: School },
       { label: "My Courses", href: "/dashboard/my-courses", icon: BookOpen },
       { label: "Semesters", href: "/dashboard/bundles", icon: Boxes },
-      { label: "Orders", href: "/dashboard/orders", icon: CreditCard },
       { label: "Notifications", href: "/notifications", icon: Bell },
       { label: "Profile", href: "/dashboard/profile", icon: Users },
     ],

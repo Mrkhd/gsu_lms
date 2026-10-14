@@ -53,7 +53,6 @@ export async function createBundleAction(
         shortDescription: data.shortDescription || null,
         description: data.description || null,
         thumbnailUrl: data.thumbnailUrl || null,
-        price: data.price,
         accessDurationDays: data.accessDurationDays,
         status: data.status,
         publishedAt: data.status === "PUBLISHED" ? new Date() : null,
@@ -102,7 +101,6 @@ export async function updateBundleAction(
         shortDescription: data.shortDescription || null,
         description: data.description || null,
         thumbnailUrl: data.thumbnailUrl || null,
-        price: data.price,
         accessDurationDays: data.accessDurationDays,
         status: data.status,
         publishedAt:

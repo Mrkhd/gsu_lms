@@ -7,17 +7,23 @@ export const userStatusEnum = z.enum(["ACTIVE", "SUSPENDED"])
 export const enrollmentStatusEnum = z.enum(["ACTIVE", "EXPIRED", "CANCELLED"])
 export const enrollmentSourceEnum = z.enum(["DIRECT_PURCHASE", "BUNDLE_PURCHASE", "ADMIN_GRANT"])
 
-export const grantEnrollmentSchema = z
-  .object({
-    studentId: z.string().min(1, "Select a student"),
-    courseId: z.string().optional().or(z.literal("")),
-    bundleId: z.string().optional().or(z.literal("")),
-    accessDurationDays: accessDurationField,
-  })
-  .refine((data) => !!data.courseId || !!data.bundleId, {
-    message: "Choose a course or a bundle",
-    path: ["courseId"],
-  })
+export const grantEnrollmentSchema = z.object({
+  studentId: z.string().min(1, "Select a student"),
+  programId: z.string().min(1, "Select a program"),
+  bundleId: z.string().min(1, "Select a semester"),
+  accessDurationDays: accessDurationField,
+})
+
+export const updateSemesterEnrollmentSchema = z.object({
+  status: enrollmentStatusEnum,
+  accessDurationDays: accessDurationField,
+})
+
+export const grantCourseLockSchema = z.object({
+  studentId: z.string().min(1),
+  courseId: z.string().min(1),
+  reason: z.string().trim().max(200).optional().or(z.literal("")),
+})
 
 export const updateEnrollmentSchema = z.object({
   status: enrollmentStatusEnum,

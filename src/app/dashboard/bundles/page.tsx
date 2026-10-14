@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Boxes } from "lucide-react"
+import { Boxes, Lock } from "lucide-react"
 
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -20,8 +20,8 @@ export default async function StudentBundlesPage() {
   return (
     <div>
       <PageHeader
-        title="My bundles"
-        description="Course bundles you have purchased and the access they unlock."
+        title="My semesters"
+        description="Semesters assigned to you and the courses they unlock."
       />
       {enrollments.length > 0 ? (
         <div className="grid gap-6 lg:grid-cols-2">
@@ -45,18 +45,30 @@ export default async function StudentBundlesPage() {
                     {enrollment.bundle._count.courses} courses included
                   </p>
                   <ul className="space-y-1.5">
-                    {enrollment.bundle.courses.map(({ course }) => (
+                    {enrollment.bundle.courses.map(({ course, locked }) => (
                       <li key={course.id} className="flex items-center gap-2 text-sm">
-                        <Badge variant="outline" className="size-1.5 rounded-full p-0" />
-                        <Link href={`/learn/${course.slug}`} className="hover:underline">
-                          {course.title}
-                        </Link>
+                        {locked ? (
+                          <>
+                            <Lock className="size-3.5 shrink-0 text-destructive" />
+                            <span className="text-muted-foreground">{course.title}</span>
+                            <Badge variant="destructive" className="ml-auto">
+                              Locked by admin
+                            </Badge>
+                          </>
+                        ) : (
+                          <>
+                            <Badge variant="outline" className="size-1.5 rounded-full p-0" />
+                            <Link href={`/learn/${course.slug}`} className="hover:underline">
+                              {course.title}
+                            </Link>
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>
                   {!active ? (
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/bundles/${enrollment.bundle.slug}`}>Renew bundle</Link>
+                      <Link href={`/bundles/${enrollment.bundle.slug}`}>View semester</Link>
                     </Button>
                   ) : null}
                 </CardContent>
@@ -67,13 +79,8 @@ export default async function StudentBundlesPage() {
       ) : (
         <EmptyState
           icon={Boxes}
-          title="No bundles yet"
-          description="Buy a bundle to unlock several courses at once."
-          action={
-            <Button asChild>
-              <Link href="/bundles">Browse bundles</Link>
-            </Button>
-          }
+          title="No semesters yet"
+          description="Semesters assigned to you by the university will appear here."
         />
       )}
     </div>

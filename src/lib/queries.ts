@@ -8,8 +8,11 @@ import {
   bundleEnrollments,
   bundles,
   courseCategories,
+  courseLocks,
   courses,
   enrollments,
+  formSubmissions,
+  forms,
   lessonProgress,
   lessons,
   orderItems,
@@ -21,13 +24,13 @@ import {
   reviews,
   users,
 } from "@/db/schema"
-import type { PublishStatus } from "@/db/types"
-import { isEnrollmentActive } from "@/lib/access"
+import type { EnrollmentStatus, PublishStatus, UserStatus } from "@/db/types"
+import { getCourseLocks, isEnrollmentActive } from "@/lib/access"
 import { percent } from "@/lib/format"
 
 export const PAGE_SIZE = 9
 
-export type CatalogSort = "newest" | "price-asc" | "price-desc" | "popular"
+export type CatalogSort = "newest" | "popular"
 
 const instructorWith = {
   with: { profile: true },
@@ -109,7 +112,83 @@ async function withLessonAndEnrollmentCounts<
 // Public catalog
 // ---------------------------------------------------------------------------
 
-export async function getCategories() {
+export async function getProgramOptions() {
+  const db = getDb()
+  return db
+    .select({ id: programs.id, title: programs.title, slug: programs.slug })
+    .from(programs)
+    .where(eq(programs.status, "PUBLISHED"))
+    .orderBy(asc(programs.title))
+}
+
+export async function getProgramsWithSemesters() {
+  const db = getDb()
+  const rows = await db
+    .select({
+      programId: programs.id,
+      programTitle: programs.title,
+      semesterId: bundles.id,
+      semesterTitle: bundles.title,
+      semesterNumber: programSemesters.number,
+    })
+    .from(programs)
+    .leftJoin(programSemesters, eq(programSemesters.programId, programs.id))
+    .leftJoin(bundles, eq(programSemesters.bundleId, bundles.id))
+    .orderBy(asc(programs.title), asc(programSemesters.number))
+
+  const map = new Map<
+    string,
+    { id: string; title: string; semesters: { id: string; title: string; number: number | null }[] }
+  >()
+  for (const row of rows) {
+    if (!map.has(row.programId)) {
+      map.set(row.programId, { id: row.programId, title: row.programTitle, semesters: [] })
+    }
+    if (row.semesterId) {
+      map.get(row.programId)!.semesters.push({
+        id: row.semesterId,
+        title: row.semesterTitle ?? "",
+        number: row.semesterNumber ?? null,
+      })
+    }
+  }
+  return [...map.values()]
+}
+
+export type ProgramWithSemesterOptions = Awaited<ReturnType<typeof getProgramsWithSemesters>>[number]
+
+async function courseIdsForProgram(programSlug: string) {
+  const db = getDb()
+  const [program] = await db
+    .select({ id: programs.id })
+    .from(programs)
+    .where(eq(programs.slug, programSlug))
+    .limit(1)
+  if (!program) return []
+  const rows = await db
+    .selectDistinct({ courseId: bundleCourses.courseId })
+    .from(programSemesters)
+    .innerJoin(bundleCourses, eq(programSemesters.bundleId, bundleCourses.bundleId))
+    .where(eq(programSemesters.programId, program.id))
+  return rows.map((row) => row.courseId)
+}
+
+async function bundleIdsForProgram(programSlug: string) {
+  const db = getDb()
+  const [program] = await db
+    .select({ id: programs.id })
+    .from(programs)
+    .where(eq(programs.slug, programSlug))
+    .limit(1)
+  if (!program) return []
+  const rows = await db
+    .select({ bundleId: programSemesters.bundleId })
+    .from(programSemesters)
+    .where(eq(programSemesters.programId, program.id))
+  return rows.map((row) => row.bundleId)
+}
+
+export async function getCategories(options: { search?: string } = {}) {
   const db = getDb()
   const rows = await db
     .select({
@@ -123,6 +202,7 @@ export async function getCategories() {
     })
     .from(courseCategories)
     .leftJoin(courses, eq(courses.categoryId, courseCategories.id))
+    .where(options.search ? like(courseCategories.name, `%${options.search}%`) : undefined)
     .groupBy(courseCategories.id)
     .orderBy(asc(courseCategories.name))
   return rows.map(({ courseCount, ...category }) => ({
@@ -134,30 +214,43 @@ export async function getCategories() {
 export async function getPublishedCourses(options: {
   search?: string
   categorySlug?: string
+  programSlug?: string
   sort?: CatalogSort
   page?: number
   pageSize?: number
 }) {
-  const { search, categorySlug, sort = "newest", page = 1, pageSize = PAGE_SIZE } = options
+  const {
+    search,
+    categorySlug,
+    programSlug,
+    sort = "newest",
+    page = 1,
+    pageSize = PAGE_SIZE,
+  } = options
   const db = getDb()
+
+  let programCourseIds: string[] | null = null
+  if (programSlug) {
+    programCourseIds = await courseIdsForProgram(programSlug)
+    if (programCourseIds.length === 0) {
+      return { items: [], total: 0, page, pageSize, totalPages: 1 }
+    }
+  }
 
   const where = and(
     eq(courses.status, "PUBLISHED"),
     search
       ? or(like(courses.title, `%${search}%`), like(courses.shortDescription, `%${search}%`))
       : undefined,
-    categorySlug ? eq(courseCategories.slug, categorySlug) : undefined
+    categorySlug ? eq(courseCategories.slug, categorySlug) : undefined,
+    programCourseIds ? inArray(courses.id, programCourseIds) : undefined
   )
 
   const popular = sql<number>`(select count(*) from "enrollments" where "enrollments"."course_id" = "courses"."id")`
   const orderBy =
-    sort === "price-asc"
-      ? [asc(courses.price)]
-      : sort === "price-desc"
-        ? [desc(courses.price)]
-        : sort === "popular"
-          ? [desc(popular)]
-          : [desc(courses.publishedAt), desc(courses.createdAt)]
+    sort === "popular"
+      ? [desc(popular)]
+      : [desc(courses.publishedAt), desc(courses.createdAt)]
 
   const [items, totalRows] = await Promise.all([
     db.query.courses.findMany({
@@ -200,16 +293,14 @@ export async function getCourseBySlug(slug: string) {
   })
   if (!course) return null
 
-  const [lessonMap, enrollmentMap, reviewMap] = await Promise.all([
+  const [lessonMap, reviewMap] = await Promise.all([
     lessonCounts([course.id]),
-    enrollmentCountsByCourse([course.id]),
     reviewCounts([course.id]),
   ])
   return {
     ...course,
     _count: {
       lessons: lessonMap.get(course.id) ?? 0,
-      enrollments: enrollmentMap.get(course.id) ?? 0,
       reviews: reviewMap.get(course.id) ?? 0,
     },
   }
@@ -217,14 +308,25 @@ export async function getCourseBySlug(slug: string) {
 
 export async function getPublishedBundles(options: {
   search?: string
+  programSlug?: string
   page?: number
   pageSize?: number
 }) {
-  const { search, page = 1, pageSize = PAGE_SIZE } = options
+  const { search, programSlug, page = 1, pageSize = PAGE_SIZE } = options
   const db = getDb()
+
+  let programBundleIds: string[] | null = null
+  if (programSlug) {
+    programBundleIds = await bundleIdsForProgram(programSlug)
+    if (programBundleIds.length === 0) {
+      return { items: [], total: 0, page, pageSize, totalPages: 1 }
+    }
+  }
+
   const where = and(
     eq(bundles.status, "PUBLISHED"),
-    search ? or(like(bundles.title, `%${search}%`), like(bundles.shortDescription, `%${search}%`)) : undefined
+    search ? or(like(bundles.title, `%${search}%`), like(bundles.shortDescription, `%${search}%`)) : undefined,
+    programBundleIds ? inArray(bundles.id, programBundleIds) : undefined
   )
 
   const [items, totalRows] = await Promise.all([
@@ -310,6 +412,7 @@ export async function getStudentCourses(studentId: string) {
       : Promise.resolve([] as { courseId: string; value: number }[]),
   ])
   const completedMap = new Map(completedRows.map((r) => [r.courseId, Number(r.value)]))
+  const locks = await getCourseLocks(studentId)
 
   return rows.map((enrollment) => {
     const total = lessonMap.get(enrollment.courseId) ?? 0
@@ -317,6 +420,7 @@ export async function getStudentCourses(studentId: string) {
     return {
       enrollment,
       course: { ...enrollment.course, _count: { lessons: total } },
+      locked: locks.has(enrollment.courseId),
       completed,
       total,
       progress: percent(completed, total),
@@ -325,16 +429,6 @@ export async function getStudentCourses(studentId: string) {
 }
 
 export type StudentCourseItem = Awaited<ReturnType<typeof getStudentCourses>>[number]
-
-export async function getStudentOrders(studentId: string) {
-  const db = getDb()
-  const rows = await db.query.orders.findMany({
-    where: eq(orders.studentId, studentId),
-    with: { items: true },
-    orderBy: (o, { desc: d }) => [d(o.createdAt)],
-  })
-  return rows
-}
 
 export async function getStudentBundleEnrollments(studentId: string) {
   const db = getDb()
@@ -349,12 +443,16 @@ export async function getStudentBundleEnrollments(studentId: string) {
     },
     orderBy: (e, { desc: d }) => [d(e.updatedAt)],
   })
+  const locks = await getCourseLocks(studentId)
   return rows.map((row) => ({
     ...row,
     bundle: {
       ...row.bundle,
       _count: { courses: row.bundle.courses.length },
-      courses: row.bundle.courses.map((link) => ({ course: link.course })),
+      courses: row.bundle.courses.map((link) => ({
+        course: link.course,
+        locked: locks.has(link.course.id),
+      })),
     },
   }))
 }
@@ -477,10 +575,19 @@ export async function getInstructorStats(instructorId: string) {
   }
 }
 
-export async function getInstructorCourses(instructorId: string, isAdmin = false) {
+export async function getInstructorCourses(
+  instructorId: string,
+  isAdmin = false,
+  options: { search?: string; status?: PublishStatus } = {}
+) {
   const db = getDb()
+  const where = and(
+    isAdmin ? undefined : eq(courses.instructorId, instructorId),
+    options.status ? eq(courses.status, options.status) : undefined,
+    options.search ? like(courses.title, `%${options.search}%`) : undefined
+  )
   const rows = await db.query.courses.findMany({
-    where: isAdmin ? undefined : eq(courses.instructorId, instructorId),
+    where,
     with: { category: true },
     orderBy: (c, { desc: d }) => [d(c.updatedAt)],
   })
@@ -506,10 +613,35 @@ export async function getInstructorCourses(instructorId: string, isAdmin = false
   }))
 }
 
-export async function getCourseStudents(courseId: string) {
+export async function getCourseStudents(
+  courseId: string,
+  options: { search?: string; status?: EnrollmentStatus } = {}
+) {
   const db = getDb()
+
+  let studentIds: string[] | null = null
+  if (options.search) {
+    const matches = await db
+      .select({ id: users.id })
+      .from(users)
+      .leftJoin(profiles, eq(profiles.userId, users.id))
+      .where(
+        or(
+          like(users.email, `%${options.search}%`),
+          like(profiles.firstName, `%${options.search}%`),
+          like(profiles.lastName, `%${options.search}%`)
+        )
+      )
+    if (matches.length === 0) return []
+    studentIds = matches.map((m) => m.id)
+  }
+
   const rows = await db.query.enrollments.findMany({
-    where: eq(enrollments.courseId, courseId),
+    where: and(
+      eq(enrollments.courseId, courseId),
+      options.status ? eq(enrollments.status, options.status) : undefined,
+      studentIds ? inArray(enrollments.studentId, studentIds) : undefined
+    ),
     with: { student: { with: { profile: true } } },
     orderBy: (e, { desc: d }) => [d(e.createdAt)],
   })
@@ -552,9 +684,15 @@ export async function getAdminCourses(options: { search?: string; status?: Publi
   return withLessonAndEnrollmentCounts(rows)
 }
 
-export async function getAdminBundles() {
+export async function getAdminBundles(
+  options: { search?: string; status?: PublishStatus } = {}
+) {
   const db = getDb()
   const rows = await db.query.bundles.findMany({
+    where: and(
+      options.status ? eq(bundles.status, options.status) : undefined,
+      options.search ? like(bundles.title, `%${options.search}%`) : undefined
+    ),
     with: { courses: { with: { course: true } }, programSemesters: true },
     orderBy: (b, { desc: d }) => [d(b.updatedAt)],
   })
@@ -569,7 +707,7 @@ export async function getAdminBundles() {
   }))
 }
 
-export async function getInstructors() {
+export async function getInstructors(options: { search?: string; status?: UserStatus } = {}) {
   const db = getDb()
   const rows = await db
     .select({
@@ -584,7 +722,19 @@ export async function getInstructors() {
     .from(users)
     .leftJoin(profiles, eq(profiles.userId, users.id))
     .leftJoin(courses, eq(courses.instructorId, users.id))
-    .where(eq(users.role, "INSTRUCTOR"))
+    .where(
+      and(
+        eq(users.role, "INSTRUCTOR"),
+        options.status ? eq(users.status, options.status) : undefined,
+        options.search
+          ? or(
+              like(users.email, `%${options.search}%`),
+              like(profiles.firstName, `%${options.search}%`),
+              like(profiles.lastName, `%${options.search}%`)
+            )
+          : undefined
+      )
+    )
     .groupBy(users.id)
     .orderBy(desc(users.createdAt))
   return rows.map(({ courseCount, ...instructor }) => ({
@@ -593,10 +743,11 @@ export async function getInstructors() {
   }))
 }
 
-export async function getStudents(options: { search?: string } = {}) {
+export async function getStudents(options: { search?: string; status?: UserStatus } = {}) {
   const db = getDb()
   const where = and(
     eq(users.role, "STUDENT"),
+    options.status ? eq(users.status, options.status) : undefined,
     options.search
       ? or(
           like(users.email, `%${options.search}%`),
@@ -626,46 +777,39 @@ export async function getStudents(options: { search?: string } = {}) {
   }))
 }
 
-export async function getAdminOrders(options: { search?: string } = {}) {
+export async function getAdminSemesterEnrollments(
+  options: { search?: string; status?: EnrollmentStatus } = {}
+) {
   const db = getDb()
-  const where = options.search ? like(users.email, `%${options.search}%`) : undefined
-  const rows = await db.query.orders.findMany({
-    with: {
-      student: { with: { profile: true } },
-      items: true,
-    },
-    orderBy: (o, { desc: d }) => [d(o.createdAt)],
-    limit: 100,
-  })
-  void where
-  return rows.map((order) => ({
-    ...order,
-    student: { id: order.student.id, email: order.student.email, profile: order.student.profile },
-  }))
-}
-
-export async function getAdminEnrollments(options: { search?: string } = {}) {
-  const db = getDb()
-  const where = options.search ? like(users.email, `%${options.search}%`) : undefined
+  const where = and(
+    options.status ? eq(bundleEnrollments.status, options.status) : undefined,
+    options.search
+      ? or(
+          like(users.email, `%${options.search}%`),
+          like(profiles.firstName, `%${options.search}%`),
+          like(profiles.lastName, `%${options.search}%`)
+        )
+      : undefined
+  )
   const rows = await db
     .select({
-      enrollment: enrollments,
+      enrollment: bundleEnrollments,
       studentId: users.id,
       studentEmail: users.email,
       firstName: profiles.firstName,
       lastName: profiles.lastName,
       avatarUrl: profiles.avatarUrl,
-      courseId: courses.id,
-      courseTitle: courses.title,
-      courseSlug: courses.slug,
+      bundleId: bundles.id,
+      bundleTitle: bundles.title,
+      bundleSlug: bundles.slug,
     })
-    .from(enrollments)
-    .innerJoin(users, eq(enrollments.studentId, users.id))
+    .from(bundleEnrollments)
+    .innerJoin(users, eq(bundleEnrollments.studentId, users.id))
     .leftJoin(profiles, eq(profiles.userId, users.id))
-    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .innerJoin(bundles, eq(bundleEnrollments.bundleId, bundles.id))
     .where(where)
-    .orderBy(desc(enrollments.createdAt))
-    .limit(100)
+    .orderBy(desc(bundleEnrollments.createdAt))
+    .limit(200)
   return rows.map((row) => ({
     ...row.enrollment,
     student: {
@@ -673,9 +817,121 @@ export async function getAdminEnrollments(options: { search?: string } = {}) {
       email: row.studentEmail,
       profile: { firstName: row.firstName, lastName: row.lastName, avatarUrl: row.avatarUrl },
     },
-    course: { id: row.courseId, title: row.courseTitle, slug: row.courseSlug },
+    bundle: { id: row.bundleId, title: row.bundleTitle, slug: row.bundleSlug },
   }))
 }
+
+export type AdminSemesterEnrollment = Awaited<
+  ReturnType<typeof getAdminSemesterEnrollments>
+>[number]
+
+export async function getStudentAccessDetail(studentId: string) {
+  const db = getDb()
+  const [student] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      status: users.status,
+      createdAt: users.createdAt,
+      profile: profiles,
+    })
+    .from(users)
+    .leftJoin(profiles, eq(profiles.userId, users.id))
+    .where(eq(users.id, studentId))
+    .limit(1)
+  if (!student) return null
+
+  const [programRows, semesterRows, lockRows] = await Promise.all([
+    db
+      .select({
+        status: programEnrollments.status,
+        currentSemester: programEnrollments.currentSemester,
+        program: programs,
+      })
+      .from(programEnrollments)
+      .innerJoin(programs, eq(programEnrollments.programId, programs.id))
+      .where(eq(programEnrollments.studentId, studentId))
+      .orderBy(desc(programEnrollments.updatedAt)),
+    db
+      .select({ enrollment: bundleEnrollments, bundle: bundles })
+      .from(bundleEnrollments)
+      .innerJoin(bundles, eq(bundleEnrollments.bundleId, bundles.id))
+      .where(eq(bundleEnrollments.studentId, studentId))
+      .orderBy(desc(bundleEnrollments.updatedAt)),
+    db
+      .select({ courseId: courseLocks.courseId, reason: courseLocks.reason })
+      .from(courseLocks)
+      .where(eq(courseLocks.studentId, studentId)),
+  ])
+
+  const bundleIds = semesterRows.map((row) => row.bundle.id)
+  const [courseRows, programSemesterRows] = await Promise.all([
+    bundleIds.length
+      ? db
+          .select({ bundleId: bundleCourses.bundleId, course: courses })
+          .from(bundleCourses)
+          .innerJoin(courses, eq(bundleCourses.courseId, courses.id))
+          .where(inArray(bundleCourses.bundleId, bundleIds))
+          .orderBy(asc(bundleCourses.position))
+      : Promise.resolve([] as { bundleId: string; course: typeof courses.$inferSelect }[]),
+    bundleIds.length
+      ? db
+          .select({
+            bundleId: programSemesters.bundleId,
+            number: programSemesters.number,
+            programTitle: programs.title,
+          })
+          .from(programSemesters)
+          .innerJoin(programs, eq(programSemesters.programId, programs.id))
+          .where(inArray(programSemesters.bundleId, bundleIds))
+      : Promise.resolve([] as { bundleId: string; number: number; programTitle: string }[]),
+  ])
+
+  const lockSet = new Set(lockRows.map((row) => row.courseId))
+  const enrolledCourseIds = new Set(courseRows.map((row) => row.course.id))
+
+  const extraLockedIds = lockRows
+    .map((row) => row.courseId)
+    .filter((id) => !enrolledCourseIds.has(id))
+  const extraLockedCourses = extraLockedIds.length
+    ? await db
+        .select({ id: courses.id, title: courses.title, slug: courses.slug })
+        .from(courses)
+        .where(inArray(courses.id, extraLockedIds))
+    : []
+
+  const semesters = semesterRows.map(({ enrollment, bundle }) => {
+    const mapping = programSemesterRows.find((row) => row.bundleId === bundle.id)
+    const semesterCourses = courseRows
+      .filter((row) => row.bundleId === bundle.id)
+      .map((row) => ({
+        id: row.course.id,
+        title: row.course.title,
+        slug: row.course.slug,
+        locked: lockSet.has(row.course.id),
+      }))
+    return {
+      enrollment,
+      bundle: { id: bundle.id, title: bundle.title },
+      programTitle: mapping?.programTitle ?? null,
+      semesterNumber: mapping?.number ?? null,
+      courses: semesterCourses,
+    }
+  })
+
+  return {
+    student,
+    programs: programRows.map((row) => ({
+      status: row.status,
+      currentSemester: row.currentSemester,
+      title: row.program.title,
+    })),
+    semesters,
+    lockedOnly: extraLockedCourses.map((course) => ({ ...course, locked: true })),
+  }
+}
+
+export type StudentAccessDetail = NonNullable<Awaited<ReturnType<typeof getStudentAccessDetail>>>
 
 // ---------------------------------------------------------------------------
 // University programs
@@ -704,12 +960,10 @@ export async function getPublishedPrograms(options: {
     }),
     db.select({ value: count() }).from(programs).where(where),
   ])
-  const enrollmentMap = await enrollmentCountsByProgram(items.map((p) => p.id))
   const total = Number(totalRows[0]?.value ?? 0)
   return {
     items: items.map((program) => ({
       ...program,
-      _count: { enrollments: enrollmentMap.get(program.id) ?? 0 },
       semesters: program.semesters.map((s) => ({ bundle: s.bundle })),
     })),
     total,
@@ -736,13 +990,11 @@ export async function getProgramBySlug(slug: string) {
   })
   if (!program) return null
 
-  const enrollmentMap = await enrollmentCountsByProgram([program.id])
   const courseIds = program.semesters.flatMap((s) => s.bundle.courses.map((l) => l.course.id))
   const lessonMap = await lessonCounts(courseIds)
 
   return {
     ...program,
-    _count: { enrollments: enrollmentMap.get(program.id) ?? 0 },
     semesters: program.semesters.map((semester) => ({
       ...semester,
       bundle: {
@@ -761,9 +1013,20 @@ export async function getProgramBySlug(slug: string) {
 
 export type ProgramWithSemesters = NonNullable<Awaited<ReturnType<typeof getProgramBySlug>>>
 
-export async function getAdminPrograms() {
+export async function getAdminPrograms(
+  options: { search?: string; status?: PublishStatus } = {}
+) {
   const db = getDb()
   const rows = await db.query.programs.findMany({
+    where: and(
+      options.status ? eq(programs.status, options.status) : undefined,
+      options.search
+        ? or(
+            like(programs.title, `%${options.search}%`),
+            like(programs.code, `%${options.search}%`)
+          )
+        : undefined
+    ),
     with: { semesters: { with: { bundle: true }, orderBy: (s, { asc: a }) => [a(s.number)] } },
     orderBy: (p, { desc: d }) => [d(p.updatedAt)],
   })
@@ -953,3 +1216,78 @@ export type StudentAssignmentItem = Awaited<ReturnType<typeof getStudentCourseAs
 
 // Re-export commonly used order-item type for pages that need it.
 export { orderItems }
+
+// ---------------------------------------------------------------------------
+// Forms
+// ---------------------------------------------------------------------------
+
+export async function getAdminForms(options: { search?: string; status?: PublishStatus } = {}) {
+  const db = getDb()
+  const rows = await db
+    .select({
+      id: forms.id,
+      title: forms.title,
+      slug: forms.slug,
+      status: forms.status,
+      fields: forms.fields,
+      createdAt: forms.createdAt,
+      updatedAt: forms.updatedAt,
+      responseCount: sql<number>`(select count(*) from ${formSubmissions} where ${formSubmissions.formId} = ${forms.id})`,
+    })
+    .from(forms)
+    .where(
+      and(
+        options.status ? eq(forms.status, options.status) : undefined,
+        options.search ? like(forms.title, `%${options.search}%`) : undefined
+      )
+    )
+    .orderBy(desc(forms.updatedAt))
+  return rows.map(({ responseCount, ...form }) => ({
+    ...form,
+    _count: { responses: Number(responseCount), fields: form.fields.length },
+  }))
+}
+
+export type AdminFormListItem = Awaited<ReturnType<typeof getAdminForms>>[number]
+
+export async function getFormById(id: string) {
+  const db = getDb()
+  const [row] = await db.select().from(forms).where(eq(forms.id, id)).limit(1)
+  return row ?? null
+}
+
+export async function getFormBySlug(slug: string) {
+  const db = getDb()
+  const [row] = await db
+    .select()
+    .from(forms)
+    .where(and(eq(forms.slug, slug), eq(forms.status, "PUBLISHED")))
+    .limit(1)
+  return row ?? null
+}
+
+export async function getPublishedForms() {
+  const db = getDb()
+  return db
+    .select({
+      id: forms.id,
+      title: forms.title,
+      slug: forms.slug,
+      description: forms.description,
+      updatedAt: forms.updatedAt,
+    })
+    .from(forms)
+    .where(eq(forms.status, "PUBLISHED"))
+    .orderBy(desc(forms.updatedAt))
+}
+
+export async function getFormSubmissions(formId: string) {
+  const db = getDb()
+  return db
+    .select()
+    .from(formSubmissions)
+    .where(eq(formSubmissions.formId, formId))
+    .orderBy(desc(formSubmissions.createdAt))
+}
+
+export type FormSubmissionRow = Awaited<ReturnType<typeof getFormSubmissions>>[number]

@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/dashboard-shell"
 import { Button } from "@/components/ui/button"
 import { getBundleOptions } from "@/db/options"
 import { requireAdmin } from "@/lib/auth/server"
-import { toNumber } from "@/lib/format"
 
 export const metadata = { title: "New program" }
 
@@ -41,11 +40,7 @@ export default async function NewProgramPage() {
           status: "DRAFT",
         }}
         defaultSemesters={{}}
-        bundles={bundles.map((bundle) => ({
-          id: bundle.id,
-          title: bundle.title,
-          price: toNumber(bundle.price),
-        }))}
+        bundles={bundles.map((bundle) => ({ id: bundle.id, title: bundle.title }))}
       />
     </div>
   )

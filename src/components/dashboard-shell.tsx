@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { AccountMenu } from "@/components/account-menu"
 import { DashboardSidebar, MobileDashboardNav, type DashboardVariant } from "@/components/dashboard-nav"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import type { CurrentUser } from "@/lib/auth/server"
 import { roleLabel } from "@/lib/routes"
@@ -33,6 +34,7 @@ export function DashboardShell({
           <MobileDashboardNav variant={variant} />
           <span className="text-sm font-medium text-muted-foreground">{roleLabel(user.role)}</span>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
               <Link href="/">View site</Link>
             </Button>

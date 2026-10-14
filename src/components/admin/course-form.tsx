@@ -253,21 +253,7 @@ export function CourseForm({
               Access duration is locked into each enrollment at purchase time.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price (USD)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={0} step="0.01" {...field} />
-                  </FormControl>
-                  <FormDescription>Set 0 for a free course.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <CardContent className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="accessDurationDays"

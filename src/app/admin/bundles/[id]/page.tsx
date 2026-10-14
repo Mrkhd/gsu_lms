@@ -12,7 +12,6 @@ import { getDb } from "@/db/client"
 import { getCourseOptions } from "@/db/options"
 import { bundles } from "@/db/schema"
 import { requireAdmin } from "@/lib/auth/server"
-import { toNumber } from "@/lib/format"
 import { setBundleStatusAction } from "@/server/actions/bundles"
 
 export const metadata = { title: "Edit bundle" }
@@ -69,17 +68,13 @@ export default async function EditBundlePage({ params }: { params: Promise<{ id:
           shortDescription: bundle.shortDescription ?? "",
           description: bundle.description ?? "",
           thumbnailUrl: bundle.thumbnailUrl ?? "",
-          price: String(toNumber(bundle.price)),
+          price: "0",
           accessDurationDays:
             bundle.accessDurationDays === null ? "lifetime" : String(bundle.accessDurationDays),
           status: bundle.status,
           courseIds: bundle.courses.map((link) => link.courseId),
         }}
-        courses={courses.map((course) => ({
-          id: course.id,
-          title: course.title,
-          price: toNumber(course.price),
-        }))}
+        courses={courses.map((course) => ({ id: course.id, title: course.title }))}
       />
     </div>
   )

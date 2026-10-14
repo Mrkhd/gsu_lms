@@ -21,6 +21,7 @@ import type {
   Role,
   SubmissionStatus,
   ConversationType,
+  FormField,
   UserStatus,
 } from "./types"
 
@@ -334,6 +335,30 @@ export const bundleEnrollments = sqliteTable(
   ]
 )
 
+export const courseLocks = sqliteTable(
+  "course_locks",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    studentId: text("student_id").notNull(),
+    courseId: text("course_id").notNull(),
+    lockedBy: text("locked_by"),
+    reason: text("reason"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("course_locks_student_id_course_id_key").on(t.studentId, t.courseId),
+    index("course_locks_student_id_idx").on(t.studentId),
+    index("course_locks_course_id_idx").on(t.courseId),
+    foreignKey({ columns: [t.studentId], foreignColumns: [users.id], name: "course_locks_student_id_fkey" }).onDelete(
+      "cascade"
+    ),
+    foreignKey({ columns: [t.courseId], foreignColumns: [courses.id], name: "course_locks_course_id_fkey" }).onDelete(
+      "cascade"
+    ),
+  ]
+)
+
 // ---------------------------------------------------------------------------
 // Learning
 // ---------------------------------------------------------------------------
@@ -582,6 +607,53 @@ export const messages = sqliteTable(
       "cascade"
     ),
     foreignKey({ columns: [t.senderId], foreignColumns: [users.id], name: "messages_sender_id_fkey" }).onDelete(
+      "cascade"
+    ),
+  ]
+)
+
+// ---------------------------------------------------------------------------
+// Forms (admin-built, public submissions)
+// ---------------------------------------------------------------------------
+
+export const forms = sqliteTable(
+  "forms",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    status: text("status").$type<PublishStatus>().notNull().default("DRAFT"),
+    fields: text("fields", { mode: "json" }).$type<FormField[]>().notNull().default([]),
+    createdBy: text("created_by"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("forms_slug_key").on(t.slug),
+    index("forms_status_idx").on(t.status),
+    foreignKey({ columns: [t.createdBy], foreignColumns: [users.id], name: "forms_created_by_fkey" }).onDelete(
+      "set null"
+    ),
+  ]
+)
+
+export const formSubmissions = sqliteTable(
+  "form_submissions",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    formId: text("form_id").notNull(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    answers: text("answers", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("form_submissions_form_id_idx").on(t.formId),
+    foreignKey({ columns: [t.formId], foreignColumns: [forms.id], name: "form_submissions_form_id_fkey" }).onDelete(
       "cascade"
     ),
   ]

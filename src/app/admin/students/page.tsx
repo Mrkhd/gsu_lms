@@ -1,6 +1,9 @@
+import Link from "next/link"
+import type { UserStatus } from "@/db/types"
 import { GraduationCap, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { TableFilters, USER_STATUS_OPTIONS } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
 import { StatusBadge } from "@/components/status-badge"
@@ -22,9 +25,19 @@ import { deleteUserAction, updateUserRoleAction, updateUserStatusAction } from "
 
 export const metadata = { title: "Students" }
 
-export default async function StudentsPage() {
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const admin = await requireAdmin()
-  const students = await getStudents()
+  const params = await searchParams
+  const search = typeof params.q === "string" ? params.q : undefined
+  const status =
+    typeof params.status === "string" && ["ACTIVE", "SUSPENDED"].includes(params.status)
+      ? (params.status as UserStatus)
+      : undefined
+  const students = await getStudents({ search, status })
 
   return (
     <div>
@@ -43,6 +56,12 @@ export default async function StudentsPage() {
             }
           />
         }
+      />
+
+      <TableFilters
+        basePath="/admin/students"
+        searchPlaceholder="Search students"
+        selects={[{ key: "status", placeholder: "All statuses", options: USER_STATUS_OPTIONS }]}
       />
 
       {students.length > 0 ? (
@@ -89,6 +108,9 @@ export default async function StudentsPage() {
                       <p className="text-right text-xs text-muted-foreground">You</p>
                     ) : (
                       <div className="flex justify-end gap-1">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/admin/students/${student.id}`}>Manage access</Link>
+                        </Button>
                         <ActionButton
                           variant="ghost"
                           size="sm"

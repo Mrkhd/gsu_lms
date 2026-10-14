@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { and, eq, sql } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 import { getDb } from "@/db/client"
 import {
@@ -104,7 +104,6 @@ export async function createCourseAction(
         categoryId: data.categoryId || null,
         instructorId,
         level: data.level,
-        price: data.price,
         accessDurationDays: data.accessDurationDays,
         status: data.status,
         whatYouLearn: data.whatYouLearn,
@@ -145,7 +144,6 @@ export async function updateCourseAction(
         categoryId: data.categoryId || null,
         instructorId: user.role === "ADMIN" ? data.instructorId ?? course.instructorId : course.instructorId,
         level: data.level,
-        price: data.price,
         accessDurationDays: data.accessDurationDays,
         status: data.status,
         whatYouLearn: data.whatYouLearn,

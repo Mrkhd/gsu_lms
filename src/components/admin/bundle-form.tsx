@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Controller, useForm } from "react-hook-form"
-import { Loader2 } from "lucide-react"
+import { Loader2, Search } from "lucide-react"
 
 import { FormError } from "@/components/form-error"
 import { Badge } from "@/components/ui/badge"
@@ -25,10 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { ACCESS_DURATION_PRESETS } from "@/lib/constants"
-import { formatCurrency } from "@/lib/format"
 import { idleState, type ActionState } from "@/lib/action-utils"
 import { createBundleAction, updateBundleAction } from "@/server/actions/bundles"
 
@@ -53,16 +51,17 @@ export function BundleForm({
   mode: "create" | "edit"
   bundleId?: string
   defaultValues: BundleFormValues
-  courses: { id: string; title: string; price: number }[]
+  courses: { id: string; title: string }[]
 }) {
   const form = useForm<BundleFormValues>({ defaultValues })
   const [state, setState] = React.useState<ActionState>(idleState)
   const [pending, startTransition] = React.useTransition()
 
   const selected = form.watch("courseIds")
-  const individualValue = courses
-    .filter((course) => selected.includes(course.id))
-    .reduce((sum, course) => sum + course.price, 0)
+  const [courseQuery, setCourseQuery] = React.useState("")
+  const filteredCourses = courses.filter((course) =>
+    course.title.toLowerCase().includes(courseQuery.trim().toLowerCase())
+  )
 
   const onSubmit = form.handleSubmit((values) => {
     const formData = new FormData()
@@ -185,13 +184,23 @@ export function BundleForm({
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="relative mb-3">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={courseQuery}
+                onChange={(event) => setCourseQuery(event.target.value)}
+                placeholder="Search courses"
+                className="pl-8"
+                aria-label="Search courses"
+              />
+            </div>
             <Controller
               control={form.control}
               name="courseIds"
               render={({ field }) => (
-                <ScrollArea className="max-h-72 rounded-lg border">
+                <div className="max-h-72 overflow-y-auto rounded-lg border">
                   <div className="divide-y">
-                    {courses.map((course) => {
+                    {filteredCourses.map((course) => {
                       const checked = field.value.includes(course.id)
                       return (
                         <label
@@ -209,17 +218,18 @@ export function BundleForm({
                             }
                           />
                           <span className="flex-1 text-sm">{course.title}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {formatCurrency(course.price)}
-                          </span>
                         </label>
                       )
                     })}
-                    {courses.length === 0 ? (
-                      <p className="p-4 text-sm text-muted-foreground">No published courses yet.</p>
+                    {filteredCourses.length === 0 ? (
+                      <p className="p-4 text-sm text-muted-foreground">
+                        {courses.length === 0
+                          ? "No published courses yet."
+                          : "No courses match your search."}
+                      </p>
                     ) : null}
                   </div>
-                </ScrollArea>
+                </div>
               )}
             />
             {form.formState.errors.courseIds ? (
@@ -229,9 +239,6 @@ export function BundleForm({
             ) : null}
             <div className="mt-3 flex items-center gap-2 text-sm">
               <Badge variant="secondary">{selected.length} selected</Badge>
-              <span className="text-muted-foreground">
-                Individual value: {formatCurrency(individualValue)}
-              </span>
             </div>
           </CardContent>
         </Card>
@@ -240,20 +247,7 @@ export function BundleForm({
           <CardHeader>
             <CardTitle>Pricing &amp; access</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bundle price (USD)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={0} step="0.01" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <CardContent className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="accessDurationDays"

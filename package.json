@@ -4,29 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:vinext": "vite dev --port 3001",
-    "build": "vite build",
-    "build:next": "next build",
+    "build": "next build",
     "start": "next start",
-    "start:vinext": "wrangler dev --config dist/server/wrangler.json --persist-to .wrangler/state",
-    "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:seed:generate": "node scripts/seed.mjs",
-    "db:migrate:local": "wrangler d1 execute gsu-postgraduate --local --file drizzle/migrations/0000_dapper_blonde_phantom.sql && wrangler d1 execute gsu-postgraduate --local --file drizzle/migrations/0001_open_morgan_stark.sql && wrangler d1 execute gsu-postgraduate --local --file drizzle/migrations/0002_volatile_christian_walker.sql",
-    "db:migrate:remote": "wrangler d1 execute gsu-postgraduate --remote --file drizzle/migrations/0000_dapper_blonde_phantom.sql && wrangler d1 execute gsu-postgraduate --remote --file drizzle/migrations/0001_open_morgan_stark.sql && wrangler d1 execute gsu-postgraduate --remote --file drizzle/migrations/0002_volatile_christian_walker.sql",
-    "db:seed:local": "node scripts/seed.mjs && wrangler d1 execute gsu-postgraduate --local --file drizzle/seed.sql",
-    "db:seed:remote": "node scripts/seed.mjs && wrangler d1 execute gsu-postgraduate --remote --file drizzle/seed.sql",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:seed": "node scripts/seed.mjs && node scripts/apply-seed.mjs",
+    "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.9.1",
-    "@vinext/cloudflare": "^1.0.1",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.4.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -49,24 +42,17 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.62.5",
-    "@cloudflare/workers-types": "^5.20261006.1",
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.1.2",
-    "@vitejs/plugin-rsc": "^0.5.35",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
-    "react-server-dom-webpack": "^19.3.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5",
-    "vinext": "^1.0.1",
-    "vite": "^8.3.3",
-    "wrangler": "^4.147.0"
+    "typescript": "^5"
   },
   "type": "module"
 }

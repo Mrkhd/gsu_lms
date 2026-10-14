@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { CheckCircle2, Clock, ExternalLink, School } from "lucide-react"
 
-import { CheckoutButton } from "@/components/checkout-button"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
 import { Badge } from "@/components/ui/badge"
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { requireUser } from "@/lib/auth/server"
-import { formatDate, formatPrice, toNumber } from "@/lib/format"
+import { formatDate } from "@/lib/format"
 import { getStudentPrograms } from "@/lib/queries"
 
 export const metadata = { title: "My program" }
@@ -62,7 +61,6 @@ export default async function StudentProgramPage() {
 
                 <div className="space-y-3">
                   {item.semesters.map((semester) => {
-                    const price = toNumber(semester.bundle.price)
                     const firstCourse = semester.bundle.courses[0]?.course
                     return (
                       <div
@@ -95,9 +93,6 @@ export default async function StudentProgramPage() {
                         </div>
 
                         <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                          <span className="font-medium">
-                            {price > 0 ? formatPrice(price) : "Free"}
-                          </span>
                           {semester.owned ? (
                             <Button asChild size="sm" variant="outline">
                               <Link
@@ -107,13 +102,9 @@ export default async function StudentProgramPage() {
                               </Link>
                             </Button>
                           ) : (
-                            <CheckoutButton
-                              size="sm"
-                              itemType="BUNDLE"
-                              itemId={semester.bundle.id}
-                              redirectTo="/dashboard/program"
-                              label={`Pay for Semester ${semester.number}`}
-                            />
+                            <span className="text-xs text-muted-foreground">
+                              Assigned by the university
+                            </span>
                           )}
                         </div>
                       </div>

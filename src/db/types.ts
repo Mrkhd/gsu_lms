@@ -34,3 +34,25 @@ export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number]
 
 export const CONVERSATION_TYPES = ["DIRECT", "GROUP"] as const
 export type ConversationType = (typeof CONVERSATION_TYPES)[number]
+
+export const FORM_FIELD_TYPES = [
+  "TEXT",
+  "PARAGRAPH",
+  "EMAIL",
+  "NUMBER",
+  "DATE",
+  "SELECT",
+  "RADIO",
+  "CHECKBOX",
+  "CHECKBOXES",
+] as const
+export type FormFieldType = (typeof FORM_FIELD_TYPES)[number]
+
+export type FormField = {
+  id: string
+  type: FormFieldType
+  label: string
+  required: boolean
+  placeholder?: string
+  options?: string[]
+}

@@ -5,14 +5,13 @@ import { Layers, User } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Thumbnail } from "@/components/thumbnail"
-import { formatPrice, fullName } from "@/lib/format"
+import { fullName } from "@/lib/format"
 
 type CourseCardCourse = {
   slug: string
   title: string
   shortDescription?: string | null
   thumbnailUrl?: string | null
-  price: number | string
   level?: string | null
   category?: { name: string } | null
   instructor?: { profile?: { firstName: string | null; lastName: string | null } | null } | null
@@ -57,8 +56,7 @@ export function CourseCard({ course, href }: { course: CourseCardCourse; href?: 
           </span>
         </div>
       </CardContent>
-      <CardFooter className="justify-between">
-        <span className="font-heading text-base font-semibold">{formatPrice(course.price)}</span>
+      <CardFooter className="justify-end">
         <Link
           href={href ?? `/courses/${course.slug}`}
           className="text-sm font-medium text-primary hover:underline"

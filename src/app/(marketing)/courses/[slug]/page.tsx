@@ -1,10 +1,9 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { BookOpen, CheckCircle2, Clock, GraduationCap, Layers, Star, Users } from "lucide-react"
+import { BookOpen, CheckCircle2, Clock, GraduationCap, Layers, Star } from "lucide-react"
 
 import { Curriculum } from "@/components/curriculum"
 import { ReviewForm } from "@/components/review-form"
-import { StatusBadge } from "@/components/status-badge"
 import { Thumbnail } from "@/components/thumbnail"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -13,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { getCourseAccess } from "@/lib/access"
 import { getCurrentUser } from "@/lib/auth/server"
-import { formatAccessDuration, formatDate, formatPrice, fullName, initials } from "@/lib/format"
+import { formatAccessDuration, formatDate, fullName, initials } from "@/lib/format"
 import { getCourseBySlug } from "@/lib/queries"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -54,7 +53,6 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{course.category?.name ?? "Uncategorised"}</Badge>
               <Badge variant="outline">{course.level.toLowerCase()}</Badge>
-              <StatusBadge status={course.status} />
             </div>
             <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
               {course.title}
@@ -68,10 +66,6 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
               <span className="inline-flex items-center gap-1.5">
                 <Layers className="size-4" />
                 {course._count.lessons} lessons
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="size-4" />
-                {course._count.enrollments} students
               </span>
               {rating ? (
                 <span className="inline-flex items-center gap-1.5">
@@ -213,22 +207,31 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         <aside className="lg:sticky lg:top-20 lg:h-fit">
           <Card>
             <CardContent className="space-y-4 pt-6">
-              <div className="flex items-baseline gap-2">
-                <span className="font-heading text-3xl font-semibold">
-                  {formatPrice(course.price)}
-                </span>
-              </div>
               <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm">
                 <Clock className="size-4 text-muted-foreground" />
                 <span className="font-medium">{formatAccessDuration(course.accessDurationDays)}</span>
               </div>
 
-              <PurchaseAction
-                slug={course.slug}
-                isAuthenticated={!!user}
-                hasAccess={!!access?.hasAccess}
-                isFree={Number(course.price) <= 0}
-              />
+              {access?.hasAccess ? (
+                <Button asChild size="lg" className="w-full">
+                  <Link href={`/learn/${course.slug}`}>Continue learning</Link>
+                </Button>
+              ) : !user ? (
+                <Button asChild size="lg" className="w-full">
+                  <Link href={`/login?next=${encodeURIComponent(`/courses/${course.slug}`)}`}>
+                    Sign in
+                  </Link>
+                </Button>
+              ) : access?.reason === "LOCKED" ? (
+                <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-muted-foreground">
+                  This course is locked by an administrator for your account.
+                </p>
+              ) : (
+                <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                  Access is assigned by Galmudug State University. Contact your program administrator
+                  to be enrolled.
+                </p>
+              )}
 
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
@@ -258,40 +261,4 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   )
 }
 
-function PurchaseAction({
-  slug,
-  isAuthenticated,
-  hasAccess,
-  isFree,
-}: {
-  slug: string
-  isAuthenticated: boolean
-  hasAccess: boolean
-  isFree: boolean
-}) {
-  if (hasAccess) {
-    return (
-      <Button asChild size="lg" className="w-full">
-        <Link href={`/learn/${slug}`}>Continue learning</Link>
-      </Button>
-    )
-  }
 
-  if (!isAuthenticated) {
-    return (
-      <Button asChild size="lg" className="w-full">
-        <Link href={`/login?next=${encodeURIComponent(`/courses/${slug}`)}`}>
-          {isFree ? "Sign in to enroll" : "Sign in to purchase"}
-        </Link>
-      </Button>
-    )
-  }
-
-  return (
-    <Button asChild size="lg" className="w-full">
-      <Link href={`/checkout/course/${slug}`}>
-        {isFree ? "Enroll now — free" : "Purchase course"}
-      </Link>
-    </Button>
-  )
-}

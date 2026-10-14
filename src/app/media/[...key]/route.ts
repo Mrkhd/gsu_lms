@@ -44,8 +44,8 @@ export async function GET(
   if (!object) return new Response("Not found", { status: 404 })
 
   const headers = new Headers()
-  headers.set("Content-Type", object.httpMetadata?.contentType ?? "application/octet-stream")
-  headers.set("ETag", object.httpEtag)
+  headers.set("Content-Type", object.contentType)
+  headers.set("ETag", object.etag)
   headers.set("Cache-Control", "private, max-age=3600")
 
   return new Response(object.body as unknown as BodyInit, { headers })

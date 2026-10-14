@@ -15,11 +15,7 @@ import {
 import { roleHome } from "@/lib/routes"
 import type { AccountMenuUser } from "@/components/account-menu"
 
-const LINKS = [
-  { label: "Browse programs", href: "/programs" },
-  { label: "Browse courses", href: "/courses" },
-  { label: "Browse bundles", href: "/bundles" },
-]
+const LINKS = [{ label: "Browse programs", href: "/programs" }]
 
 export function MobileNav({ user }: { user: AccountMenuUser | null }) {
   const [open, setOpen] = useState(false)

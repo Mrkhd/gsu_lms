@@ -26,31 +26,39 @@ import { ACCESS_DURATION_PRESETS } from "@/lib/constants"
 import { useActionForm } from "@/hooks/use-action-form"
 import { grantEnrollmentAction } from "@/server/actions/enrollments"
 
+type ProgramOption = {
+  id: string
+  title: string
+  semesters: { id: string; title: string; number: number | null }[]
+}
+
 export function EnrollmentGrantDialog({
   students,
-  courses,
-  bundles,
+  programs,
   trigger,
 }: {
   students: { id: string; name: string }[]
-  courses: { id: string; title: string }[]
-  bundles: { id: string; title: string }[]
+  programs: ProgramOption[]
   trigger: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
-  const [kind, setKind] = React.useState<"COURSE" | "BUNDLE">("COURSE")
+  const [programId, setProgramId] = React.useState("")
+  const [semesterId, setSemesterId] = React.useState("")
   const { state, pending, onSubmit } = useActionForm(grantEnrollmentAction, {
     onSuccess: () => setOpen(false),
   })
+
+  const semesters = programs.find((program) => program.id === programId)?.semesters ?? []
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Grant enrollment</DialogTitle>
+          <DialogTitle>Assign to program</DialogTitle>
           <DialogDescription>
-            Give a student access to a course or bundle without payment.
+            Enroll a student in a program and one of its semesters. Every course in the semester is
+            unlocked at once.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -72,51 +80,50 @@ export function EnrollmentGrantDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Access type</Label>
-            <Select value={kind} onValueChange={(value) => setKind(value as "COURSE" | "BUNDLE")}>
+            <Label>Program</Label>
+            <Select
+              name="programId"
+              value={programId}
+              onValueChange={(value) => {
+                setProgramId(value)
+                setSemesterId("")
+              }}
+            >
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue placeholder="Select a program" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="COURSE">Single course</SelectItem>
-                <SelectItem value="BUNDLE">Bundle</SelectItem>
+                {programs.map((program) => (
+                  <SelectItem key={program.id} value={program.id}>
+                    {program.title}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {kind === "COURSE" ? (
-            <div className="space-y-2">
-              <Label>Course</Label>
-              <Select name="courseId">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a course" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label>Bundle</Label>
-              <Select name="bundleId">
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a bundle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bundles.map((bundle) => (
-                    <SelectItem key={bundle.id} value={bundle.id}>
-                      {bundle.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>Semester</Label>
+            <Select
+              name="bundleId"
+              value={semesterId}
+              onValueChange={setSemesterId}
+              disabled={!programId}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={programId ? "Select a semester" : "Choose a program first"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {semesters.map((semester) => (
+                  <SelectItem key={semester.id} value={semester.id}>
+                    {semester.number ? `Semester ${semester.number}` : semester.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-2">
             <Label>Access duration</Label>
@@ -138,9 +145,9 @@ export function EnrollmentGrantDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending || !programId || !semesterId}>
               {pending && <Loader2 className="size-4 animate-spin" />}
-              Grant access
+              Assign
             </Button>
           </DialogFooter>
         </form>

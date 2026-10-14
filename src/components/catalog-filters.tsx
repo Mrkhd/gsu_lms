@@ -18,17 +18,17 @@ type Category = { id: string; name: string; slug: string }
 const SORTS = [
   { value: "newest", label: "Newest" },
   { value: "popular", label: "Popular" },
-  { value: "price-asc", label: "Price: low to high" },
-  { value: "price-desc", label: "Price: high to low" },
 ]
 
 export function CatalogFilters({
   basePath,
   categories,
+  programs = [],
   showSort = true,
 }: {
   basePath: string
   categories: Category[]
+  programs?: { id: string; slug: string; title: string }[]
   showSort?: boolean
 }) {
   const router = useRouter()
@@ -76,6 +76,24 @@ export function CatalogFilters({
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.slug}>
                 {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
+      {programs.length > 0 ? (
+        <Select
+          value={searchParams.get("program") ?? "all"}
+          onValueChange={(value) => update("program", value)}
+        >
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder="All programs" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All programs</SelectItem>
+            {programs.map((program) => (
+              <SelectItem key={program.id} value={program.slug}>
+                {program.title}
               </SelectItem>
             ))}
           </SelectContent>

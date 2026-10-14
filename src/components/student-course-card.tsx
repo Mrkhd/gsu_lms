@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Clock, InfinityIcon, PlayCircle } from "lucide-react"
+import { Clock, InfinityIcon, Lock, PlayCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { formatDate, fullName, isExpired } from "@/lib/format"
 import type { StudentCourseItem } from "@/lib/queries"
 
 export function StudentCourseCard({ item }: { item: StudentCourseItem }) {
-  const { enrollment, course, progress, completed, total } = item
+  const { enrollment, course, progress, completed, total, locked } = item
   const active = enrollment.status === "ACTIVE" && !isExpired(enrollment.expiresAt)
   const lifetime = enrollment.expiresAt === null
 
@@ -27,7 +27,9 @@ export function StudentCourseCard({ item }: { item: StudentCourseItem }) {
           <Link href={`/courses/${course.slug}`} className="font-medium hover:underline">
             {course.title}
           </Link>
-          {!active ? (
+          {locked ? (
+            <Badge variant="destructive">Locked by admin</Badge>
+          ) : !active ? (
             <Badge variant="destructive">Expired</Badge>
           ) : (
             <Badge variant="default">Active</Badge>
@@ -63,7 +65,12 @@ export function StudentCourseCard({ item }: { item: StudentCourseItem }) {
         </div>
       </CardContent>
       <CardFooter>
-        {active ? (
+        {locked ? (
+          <Button variant="outline" className="w-full" disabled>
+            <Lock />
+            Locked by admin
+          </Button>
+        ) : active ? (
           <Button asChild className="w-full">
             <Link href={`/learn/${course.slug}`}>
               <PlayCircle />
@@ -72,7 +79,7 @@ export function StudentCourseCard({ item }: { item: StudentCourseItem }) {
           </Button>
         ) : (
           <Button asChild variant="outline" className="w-full">
-            <Link href={`/checkout/course/${course.slug}`}>Renew access</Link>
+            <Link href={`/courses/${course.slug}`}>View course</Link>
           </Button>
         )}
       </CardFooter>

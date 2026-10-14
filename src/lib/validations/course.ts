@@ -41,7 +41,6 @@ export const courseSchema = z.object({
   categoryId: optionalText,
   instructorId: optionalText,
   level: courseLevelEnum.default("BEGINNER"),
-  price: z.coerce.number().min(0, "Price cannot be negative").max(1_000_000),
   accessDurationDays: accessDurationField,
   status: courseStatusEnum.default("DRAFT"),
   whatYouLearn: stringList,

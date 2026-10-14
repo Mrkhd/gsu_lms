@@ -1,11 +1,11 @@
 import Link from "next/link"
-import { BookOpen, School } from "lucide-react"
+import { School } from "lucide-react"
 
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Thumbnail } from "@/components/thumbnail"
-import { formatPrice, toNumber } from "@/lib/format"
+
 
 type ProgramCardProgram = {
   slug: string
@@ -15,15 +15,9 @@ type ProgramCardProgram = {
   thumbnailUrl?: string | null
   level: string
   semesterCount: number
-  _count?: { enrollments?: number }
-  semesters?: { bundle: { price: number | string } }[]
 }
 
 export function ProgramCard({ program }: { program: ProgramCardProgram }) {
-  const semesterPrices = (program.semesters ?? []).map((semester) => toNumber(semester.bundle.price))
-  const totalValue = semesterPrices.reduce((sum, price) => sum + price, 0)
-  const fromPrice = semesterPrices.length ? Math.min(...semesterPrices) : 0
-
   return (
     <Card className="h-full gap-0 pt-0 transition-shadow hover:ring-foreground/20">
       <Link href={`/programs/${program.slug}`} className="block">
@@ -52,24 +46,9 @@ export function ProgramCard({ program }: { program: ProgramCardProgram }) {
             <School className="size-3.5" />
             {program.semesterCount} semesters
           </span>
-          {program._count?.enrollments !== undefined ? (
-            <span className="inline-flex items-center gap-1">
-              <BookOpen className="size-3.5" />
-              {program._count.enrollments} students
-            </span>
-          ) : null}
         </div>
       </CardContent>
-      <CardFooter className="justify-between">
-        <div>
-          <span className="font-heading text-base font-semibold">
-            {fromPrice > 0 ? `${formatPrice(fromPrice)}` : "Free"}
-          </span>
-          <span className="text-xs text-muted-foreground"> / semester</span>
-          {totalValue > 0 ? (
-            <p className="text-xs text-muted-foreground">{formatPrice(totalValue)} total</p>
-          ) : null}
-        </div>
+      <CardFooter className="justify-end">
         <Link
           href={`/programs/${program.slug}`}
           className="text-sm font-medium text-primary hover:underline"

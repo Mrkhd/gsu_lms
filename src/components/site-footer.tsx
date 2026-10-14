@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 const QUICK_LINKS = [
   { label: "About Us", href: "/" },
   { label: "Apply Now", href: "/register" },
-  { label: "Undergraduate", href: "/courses" },
   { label: "Research", href: "/programs" },
   { label: "Upcoming Events", href: "/" },
   { label: "Blog & News", href: "/" },

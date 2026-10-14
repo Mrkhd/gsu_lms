@@ -14,7 +14,7 @@ export async function getCategoryOptions() {
 export async function getCourseOptions() {
   const db = getDb()
   return db
-    .select({ id: courses.id, title: courses.title, price: courses.price })
+    .select({ id: courses.id, title: courses.title })
     .from(courses)
     .orderBy(asc(courses.title))
 }
@@ -22,7 +22,7 @@ export async function getCourseOptions() {
 export async function getBundleOptions() {
   const db = getDb()
   return db
-    .select({ id: bundles.id, title: bundles.title, price: bundles.price })
+    .select({ id: bundles.id, title: bundles.title })
     .from(bundles)
     .orderBy(asc(bundles.title))
 }
