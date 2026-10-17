@@ -314,6 +314,23 @@ function LessonBody({ lesson }: { lesson: LearningLesson }) {
         </div>
       ) : null}
 
+      {lesson.type === "DOCUMENT" && lesson.pdfUrl ? (
+        <div className="space-y-3 rounded-xl border p-6">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <FileText className="size-4" />
+            Lesson document
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Open or download the document for this lesson (PDF, DOC or DOCX).
+          </p>
+          <Button asChild>
+            <a href={lesson.pdfUrl} target="_blank" rel="noopener noreferrer">
+              Open document
+            </a>
+          </Button>
+        </div>
+      ) : null}
+
       {lesson.type === "VIDEO" && lesson.content ? (
         <div className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">
           {lesson.content}

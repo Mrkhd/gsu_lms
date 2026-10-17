@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ExternalLink, Inbox } from "lucide-react"
+import { Download, ExternalLink, Inbox } from "lucide-react"
 
 import { FormBuilder } from "@/components/admin/form-builder"
 import { FormResponseDialog } from "@/components/admin/form-response-dialog"
@@ -34,14 +34,22 @@ export default async function EditFormPage({ params }: { params: Promise<{ id: s
         title={form.title}
         description="Edit the form and review responses."
         actions={
-          form.status === "PUBLISHED" ? (
+          <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href={`/forms/${form.slug}`} target="_blank">
-                <ExternalLink />
-                Open public form
-              </Link>
+              <a href={`/admin/forms/${form.id}/export`}>
+                <Download />
+                Download CSV
+              </a>
             </Button>
-          ) : null
+            {form.status === "PUBLISHED" ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/forms/${form.slug}`} target="_blank">
+                  <ExternalLink />
+                  Open public form
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         }
       />
 

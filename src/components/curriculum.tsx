@@ -22,8 +22,9 @@ export type CurriculumSection = {
 }
 
 function LessonIcon({ type }: { type: string }) {
-  if (type === "TEXT") return <FileText className="size-4 text-muted-foreground" />
-  if (type === "PDF") return <FileText className="size-4 text-muted-foreground" />
+  if (type === "TEXT" || type === "PDF" || type === "DOCUMENT") {
+    return <FileText className="size-4 text-muted-foreground" />
+  }
   return <PlayCircle className="size-4 text-muted-foreground" />
 }
 

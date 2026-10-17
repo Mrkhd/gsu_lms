@@ -12,10 +12,12 @@ export function MediaUpload({
   prefix,
   onUploaded,
   label = "Upload",
+  accept,
 }: {
   prefix: string
   onUploaded: (url: string) => void
   label?: string
+  accept?: string
 }) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [pending, startTransition] = React.useTransition()
@@ -42,7 +44,7 @@ export function MediaUpload({
 
   return (
     <>
-      <input ref={inputRef} type="file" hidden onChange={onChange} />
+      <input ref={inputRef} type="file" hidden accept={accept} onChange={onChange} />
       <Button
         type="button"
         variant="outline"

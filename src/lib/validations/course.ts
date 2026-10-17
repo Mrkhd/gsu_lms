@@ -2,7 +2,7 @@ import { z } from "zod"
 
 export const courseStatusEnum = z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"])
 export const courseLevelEnum = z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"])
-export const lessonTypeEnum = z.enum(["VIDEO", "TEXT", "PDF"])
+export const lessonTypeEnum = z.enum(["VIDEO", "TEXT", "PDF", "DOCUMENT"])
 
 /**
  * Accepts "lifetime" or a positive number of days and normalises to
@@ -71,8 +71,8 @@ export const lessonSchema = z
     message: "A video URL is required for video lessons",
     path: ["videoUrl"],
   })
-  .refine((data) => data.type !== "PDF" || !!data.pdfUrl, {
-    message: "A PDF URL is required for PDF lessons",
+  .refine((data) => !["PDF", "DOCUMENT"].includes(data.type) || !!data.pdfUrl, {
+    message: "A file is required for document lessons",
     path: ["pdfUrl"],
   })
 

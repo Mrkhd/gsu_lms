@@ -11,7 +11,7 @@ export type PublishStatus = (typeof PUBLISH_STATUSES)[number]
 export const COURSE_LEVELS = ["BEGINNER", "INTERMEDIATE", "ADVANCED"] as const
 export type CourseLevel = (typeof COURSE_LEVELS)[number]
 
-export const LESSON_TYPES = ["VIDEO", "TEXT", "PDF"] as const
+export const LESSON_TYPES = ["VIDEO", "TEXT", "PDF", "DOCUMENT"] as const
 export type LessonType = (typeof LESSON_TYPES)[number]
 
 export const ORDER_STATUSES = ["PENDING", "PAID", "FAILED", "CANCELLED", "REFUNDED"] as const

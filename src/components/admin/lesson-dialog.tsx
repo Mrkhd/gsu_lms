@@ -65,8 +65,8 @@ export function LessonDialog({
         <DialogHeader>
           <DialogTitle>{lesson ? "Edit lesson" : "Add lesson"}</DialogTitle>
           <DialogDescription>
-            Video lessons use an external URL. Text lessons use rich content; PDF lessons link a
-            file.
+            Video lessons use an external URL. Text lessons use rich content; document lessons link
+            a PDF, DOC or DOCX file.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -91,6 +91,7 @@ export function LessonDialog({
                   <SelectItem value="VIDEO">Video</SelectItem>
                   <SelectItem value="TEXT">Text</SelectItem>
                   <SelectItem value="PDF">PDF</SelectItem>
+                  <SelectItem value="DOCUMENT">Document (DOCX)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -122,15 +123,20 @@ export function LessonDialog({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="lesson-pdf">PDF URL</Label>
-              <MediaUpload prefix="materials" label="Upload PDF" onUploaded={setPdfUrl} />
+              <Label htmlFor="lesson-pdf">Document file</Label>
+              <MediaUpload
+                prefix="materials"
+                label="Upload document"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onUploaded={setPdfUrl}
+              />
             </div>
             <Input
               id="lesson-pdf"
               name="pdfUrl"
               value={pdfUrl}
               onChange={(event) => setPdfUrl(event.target.value)}
-              placeholder="https://… (or upload to R2)"
+              placeholder="https://… (or upload a PDF/DOCX)"
             />
           </div>
 
