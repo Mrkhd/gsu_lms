@@ -11,7 +11,12 @@ import type { Role } from "@/db/types"
 import { hashPassword, verifyPassword } from "@/lib/auth/password"
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session"
 import { requireActionUser } from "@/lib/auth/server"
-import { loginSchema, profileSchema, registerSchema } from "@/lib/validations"
+import {
+  changePasswordSchema,
+  loginSchema,
+  profileSchema,
+  registerSchema,
+} from "@/lib/validations"
 import {
   failure,
   formDataToObject,
@@ -93,6 +98,43 @@ export async function logoutAction(): Promise<void> {
   const store = await cookies()
   store.delete(SESSION_COOKIE)
   redirect("/")
+}
+
+export async function changePasswordAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const sessionUser = await requireActionUser()
+  const parsed = changePasswordSchema.safeParse(formDataToObject(formData))
+  if (!parsed.success) return fromZodError(parsed.error)
+  const { currentPassword, newPassword } = parsed.data
+
+  try {
+    const db = getDb()
+    const [user] = await db
+      .select({ id: users.id, passwordHash: users.passwordHash })
+      .from(users)
+      .where(eq(users.id, sessionUser.id))
+      .limit(1)
+    if (!user) return failure("Account not found.")
+
+    const valid = await verifyPassword(currentPassword, user.passwordHash)
+    if (!valid) {
+      return failure("Your current password is incorrect.", {
+        currentPassword: ["Incorrect password"],
+      })
+    }
+
+    const passwordHash = await hashPassword(newPassword)
+    await db
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, user.id))
+
+    return success("Your password has been changed.")
+  } catch (error) {
+    return toActionError(error)
+  }
 }
 
 export async function updateProfileAction(

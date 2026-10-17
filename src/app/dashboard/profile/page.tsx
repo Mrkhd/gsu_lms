@@ -1,8 +1,9 @@
 import { PageHeader } from "@/components/dashboard-shell"
+import { ChangePasswordForm } from "@/components/change-password-form"
 import { ProfileForm } from "@/components/profile-form"
 import { eq } from "drizzle-orm"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getDb } from "@/db/client"
 import { profiles } from "@/db/schema"
 import { requireUser } from "@/lib/auth/server"
@@ -29,6 +30,16 @@ export default async function ProfilePage() {
               email: user.email,
             }}
           />
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Password</CardTitle>
+          <CardDescription>Change the password you use to sign in.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChangePasswordForm />
         </CardContent>
       </Card>
     </div>
