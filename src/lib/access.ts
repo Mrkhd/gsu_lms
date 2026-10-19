@@ -6,6 +6,7 @@ import {
   bundleEnrollments,
   bundles,
   courseLocks,
+  courses,
   enrollments,
   programEnrollments,
 } from "@/db/schema"
@@ -285,10 +286,17 @@ export async function syncBundleCourseEnrollments(bundleId: string) {
   if (!bundle) return
 
   const links = await db
-    .select({ courseId: bundleCourses.courseId })
+    .select({
+      courseId: bundleCourses.courseId,
+      accessDurationDays: courses.accessDurationDays,
+    })
     .from(bundleCourses)
+    .innerJoin(courses, eq(bundleCourses.courseId, courses.id))
     .where(eq(bundleCourses.bundleId, bundleId))
   const courseIds = links.map((link) => link.courseId)
+  const durationByCourse = new Map(
+    links.map((link) => [link.courseId, link.accessDurationDays] as const)
+  )
 
   // Drop derived enrollments for courses that are no longer in the bundle.
   if (courseIds.length === 0) {
@@ -306,6 +314,14 @@ export async function syncBundleCourseEnrollments(bundleId: string) {
 
   for (const student of students) {
     for (const courseId of courseIds) {
+      // Respect the course's own access window: the earlier of the course
+      // duration and the semester expiry wins.
+      const expiresAt = courseAccessExpiry(
+        student.startedAt,
+        student.expiresAt,
+        durationByCourse.get(courseId) ?? null
+      )
+
       const [existing] = await db
         .select({ id: enrollments.id, bundleId: enrollments.bundleId })
         .from(enrollments)
@@ -320,17 +336,33 @@ export async function syncBundleCourseEnrollments(bundleId: string) {
           source: student.source,
           sourceId: student.sourceId ?? null,
           startedAt: student.startedAt,
-          expiresAt: student.expiresAt,
+          expiresAt,
           status: student.status,
         })
       } else if (existing.bundleId === bundleId) {
         await db
           .update(enrollments)
-          .set({ status: student.status, expiresAt: student.expiresAt, updatedAt: new Date() })
+          .set({ status: student.status, expiresAt, updatedAt: new Date() })
           .where(eq(enrollments.id, existing.id))
       }
     }
   }
+}
+
+/**
+ * The access expiry for a course granted through a semester: the course's own
+ * duration from the grant date, capped by the semester's expiry. A null course
+ * duration means lifetime (bounded only by the semester).
+ */
+function courseAccessExpiry(
+  startedAt: Date,
+  bundleExpiresAt: Date | null,
+  courseAccessDurationDays: number | null
+): Date | null {
+  if (courseAccessDurationDays === null) return bundleExpiresAt
+  const courseExpiry = addDays(startedAt, courseAccessDurationDays)
+  if (!bundleExpiresAt) return courseExpiry
+  return courseExpiry.getTime() <= bundleExpiresAt.getTime() ? courseExpiry : bundleExpiresAt
 }
 
 // ---------------------------------------------------------------------------
