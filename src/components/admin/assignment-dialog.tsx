@@ -25,12 +25,21 @@ type AssignmentDefaults = {
   title: string
   description: string | null
   dueAt: Date | null
+  availableAt: Date | string | null
   maxPoints: number
 }
 
 function toDateInput(value: Date | null) {
   if (!value) return ""
   return new Date(value).toISOString().slice(0, 10)
+}
+
+function toLocalInput(value: Date | string | null | undefined) {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 export function AssignmentDialog({
@@ -43,6 +52,7 @@ export function AssignmentDialog({
   trigger: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
+  const [availableAt, setAvailableAt] = React.useState(toLocalInput(assignment?.availableAt))
   const { state, pending, onSubmit } = useActionForm(
     assignment ? updateAssignmentAction : createAssignmentAction,
     { onSuccess: () => setOpen(false) }
@@ -60,6 +70,11 @@ export function AssignmentDialog({
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <input type="hidden" name="courseId" value={courseId} />
+          <input
+            type="hidden"
+            name="availableAt"
+            value={availableAt ? new Date(availableAt).toISOString() : ""}
+          />
           {assignment ? <input type="hidden" name="assignmentId" value={assignment.id} /> : null}
           <FormError state={state} />
           <div className="space-y-2">
@@ -96,6 +111,18 @@ export function AssignmentDialog({
                 defaultValue={assignment?.maxPoints ?? 100}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="assignment-available">Release date (optional)</Label>
+            <Input
+              id="assignment-available"
+              type="datetime-local"
+              value={availableAt}
+              onChange={(event) => setAvailableAt(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Students can see the assignment but cannot open or submit it until this date.
+            </p>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={pending}>

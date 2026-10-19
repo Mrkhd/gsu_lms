@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { CheckCircle2, Clock, FileText, Loader2, Upload } from "lucide-react"
+import { CheckCircle2, Clock, FileText, Loader2, Lock, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -79,6 +79,7 @@ export function StudentAssignments({ assignments }: { assignments: StudentAssign
       {assignments.map((assignment) => {
         const submission = assignment.submission
         const graded = submission?.status === "GRADED"
+        const locked = assignment.locked
         return (
           <Card key={assignment.id}>
             <CardContent className="space-y-3 pt-6">
@@ -95,7 +96,12 @@ export function StudentAssignments({ assignments }: { assignments: StudentAssign
                     ) : null}
                   </p>
                 </div>
-                {graded ? (
+                {locked && assignment.availableAt ? (
+                  <Badge variant="outline">
+                    <Lock className="size-3" />
+                    Opens {formatDate(assignment.availableAt, { month: "short", day: "numeric" })}
+                  </Badge>
+                ) : graded ? (
                   <Badge variant="default">
                     <CheckCircle2 className="size-3" />
                     Graded
@@ -107,7 +113,19 @@ export function StudentAssignments({ assignments }: { assignments: StudentAssign
                 )}
               </div>
 
-              {assignment.description ? (
+              {locked && assignment.availableAt ? (
+                <p className="text-sm text-muted-foreground">
+                  This assignment unlocks on{" "}
+                  {formatDate(assignment.availableAt, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                  .
+                </p>
+              ) : assignment.description ? (
                 <p className="whitespace-pre-line text-sm text-muted-foreground">
                   {assignment.description}
                 </p>
@@ -124,22 +142,24 @@ export function StudentAssignments({ assignments }: { assignments: StudentAssign
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap items-center gap-2">
-                {submission ? (
-                  <Button asChild size="sm" variant="outline">
-                    <a href={`/submissions/${submission.id}`} target="_blank" rel="noreferrer">
-                      <FileText />
-                      View my PDF
-                    </a>
-                  </Button>
-                ) : null}
-                <SubmitForm assignmentId={assignment.id} hasSubmission={Boolean(submission)} />
-                {submission ? (
-                  <span className="text-xs text-muted-foreground">
-                    Submitted {formatDate(submission.submittedAt)}
-                  </span>
-                ) : null}
-              </div>
+              {locked ? null : (
+                <div className="flex flex-wrap items-center gap-2">
+                  {submission ? (
+                    <Button asChild size="sm" variant="outline">
+                      <a href={`/submissions/${submission.id}`} target="_blank" rel="noreferrer">
+                        <FileText />
+                        View my PDF
+                      </a>
+                    </Button>
+                  ) : null}
+                  <SubmitForm assignmentId={assignment.id} hasSubmission={Boolean(submission)} />
+                  {submission ? (
+                    <span className="text-xs text-muted-foreground">
+                      Submitted {formatDate(submission.submittedAt)}
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </CardContent>
           </Card>
         )

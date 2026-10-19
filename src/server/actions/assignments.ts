@@ -60,6 +60,7 @@ export async function createAssignmentAction(
       title: parsed.data.title,
       description: parsed.data.description || null,
       dueAt: parsed.data.dueAt,
+      availableAt: parsed.data.availableAt,
       maxPoints: parsed.data.maxPoints,
     })
     refreshCourse(course.id, course.slug)
@@ -91,6 +92,7 @@ export async function updateAssignmentAction(
         title: parsed.data.title,
         description: parsed.data.description || null,
         dueAt: parsed.data.dueAt,
+        availableAt: parsed.data.availableAt,
         maxPoints: parsed.data.maxPoints,
         updatedAt: new Date(),
       })
@@ -129,11 +131,19 @@ export async function submitAssignmentAction(
   try {
     const db = getDb()
     const [assignment] = await db
-      .select({ id: assignments.id, courseId: assignments.courseId })
+      .select({
+        id: assignments.id,
+        courseId: assignments.courseId,
+        availableAt: assignments.availableAt,
+      })
       .from(assignments)
       .where(eq(assignments.id, assignmentId))
       .limit(1)
     if (!assignment) return failure("Assignment not found.")
+
+    if (assignment.availableAt && assignment.availableAt.getTime() > Date.now()) {
+      return failure("This assignment is not available yet.")
+    }
 
     const access = await getCourseAccess(user.id, assignment.courseId)
     if (!access.hasAccess) return failure("Your access to this course has expired.")

@@ -1,0 +1,1 @@
+ALTER TABLE `assignments` ADD `available_at` integer;

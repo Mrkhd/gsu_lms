@@ -37,6 +37,15 @@ type LessonDefaults = {
   pdfUrl: string | null
   durationMinutes: number | null
   isPreview: boolean
+  availableAt: Date | string | null
+}
+
+function toLocalInput(value: Date | string | null | undefined) {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 export function LessonDialog({
@@ -53,6 +62,7 @@ export function LessonDialog({
   const [open, setOpen] = React.useState(false)
   const [videoUrl, setVideoUrl] = React.useState(lesson?.videoUrl ?? "")
   const [pdfUrl, setPdfUrl] = React.useState(lesson?.pdfUrl ?? "")
+  const [availableAt, setAvailableAt] = React.useState(toLocalInput(lesson?.availableAt))
   const { state, pending, onSubmit } = useActionForm(
     lesson ? updateLessonAction : createLessonAction,
     { onSuccess: () => setOpen(false) }
@@ -72,6 +82,11 @@ export function LessonDialog({
         <form onSubmit={onSubmit} className="space-y-4">
           <input type="hidden" name="courseId" value={courseId} />
           <input type="hidden" name="sectionId" value={sectionId} />
+          <input
+            type="hidden"
+            name="availableAt"
+            value={availableAt ? new Date(availableAt).toISOString() : ""}
+          />
           {lesson ? <input type="hidden" name="lessonId" value={lesson.id} /> : null}
           <FormError state={state} />
 
@@ -105,6 +120,19 @@ export function LessonDialog({
                 defaultValue={lesson?.durationMinutes ?? ""}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lesson-available">Release date (optional)</Label>
+            <Input
+              id="lesson-available"
+              type="datetime-local"
+              value={availableAt}
+              onChange={(event) => setAvailableAt(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Students can see this lesson but cannot open it until this date.
+            </p>
           </div>
 
           <div className="space-y-2">

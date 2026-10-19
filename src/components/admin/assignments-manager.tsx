@@ -53,6 +53,7 @@ export function AssignmentsManager({
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{assignment.title}</p>
                   <p className="text-xs text-muted-foreground">
+                    {assignment.availableAt ? `Opens ${formatShortDate(assignment.availableAt)} · ` : ""}
                     {assignment.dueAt ? `Due ${formatShortDate(assignment.dueAt)} · ` : ""}
                     {assignment.maxPoints} points · {assignment.submissionCount} submitted
                   </p>
@@ -77,6 +78,7 @@ export function AssignmentsManager({
                       title: assignment.title,
                       description: assignment.description,
                       dueAt: assignment.dueAt,
+                      availableAt: assignment.availableAt,
                       maxPoints: assignment.maxPoints,
                     }}
                     trigger={

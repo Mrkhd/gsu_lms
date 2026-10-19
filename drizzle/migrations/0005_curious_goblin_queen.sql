@@ -1,0 +1,1 @@
+ALTER TABLE `lessons` ADD `available_at` integer;

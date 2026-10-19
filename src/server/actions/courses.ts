@@ -335,6 +335,7 @@ export async function createLessonAction(
       pdfUrl: data.pdfUrl || null,
       durationMinutes: data.durationMinutes,
       isPreview: data.isPreview,
+      availableAt: data.availableAt,
       position,
     })
     refreshCourse(course.id, course.slug)
@@ -371,6 +372,7 @@ export async function updateLessonAction(
         pdfUrl: data.pdfUrl || null,
         durationMinutes: data.durationMinutes,
         isPreview: data.isPreview,
+        availableAt: data.availableAt,
         updatedAt: new Date(),
       })
       .where(eq(lessons.id, lesson.id))

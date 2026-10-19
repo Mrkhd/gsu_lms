@@ -1209,7 +1209,17 @@ export async function getStudentCourseAssignments(studentId: string, courseId: s
       ),
   ])
   const map = new Map(subs.map((sub) => [sub.assignmentId, sub]))
-  return rows.map((assignment) => ({ ...assignment, submission: map.get(assignment.id) ?? null }))
+  const now = Date.now()
+  return rows.map((assignment) => {
+    const locked = assignment.availableAt ? assignment.availableAt.getTime() > now : false
+    return {
+      ...assignment,
+      // Do not send locked instructions/submissions to the browser before release.
+      description: locked ? null : assignment.description,
+      locked,
+      submission: locked ? null : map.get(assignment.id) ?? null,
+    }
+  })
 }
 
 export type StudentAssignmentItem = Awaited<ReturnType<typeof getStudentCourseAssignments>>[number]

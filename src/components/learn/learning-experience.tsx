@@ -11,6 +11,7 @@ import {
   ClipboardList,
   FileText,
   Home,
+  Lock,
   Menu,
   MessageSquare,
   PlayCircle,
@@ -35,6 +36,7 @@ export type LearningLesson = {
   pdfUrl: string | null
   durationMinutes: number | null
   isPreview: boolean
+  availableAt: string | null
   sectionId: string
   sectionTitle: string
   completed: boolean
@@ -258,6 +260,9 @@ function LessonSidebar({
             <ul className="space-y-0.5">
               {section.lessons.map((lesson) => {
                 const active = lesson.id === currentLessonId
+                const locked = lesson.availableAt
+                  ? new Date(lesson.availableAt).getTime() > Date.now()
+                  : false
                 return (
                   <li key={lesson.id}>
                     <Link
@@ -269,7 +274,9 @@ function LessonSidebar({
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >
-                      {lesson.completed ? (
+                      {locked ? (
+                        <Lock className="size-4 shrink-0 text-muted-foreground" />
+                      ) : lesson.completed ? (
                         <CircleCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                       ) : lesson.type === "VIDEO" ? (
                         <PlayCircle className="size-4 shrink-0" />
@@ -277,7 +284,11 @@ function LessonSidebar({
                         <FileText className="size-4 shrink-0" />
                       )}
                       <span className="line-clamp-2 flex-1">{lesson.title}</span>
-                      {lesson.durationMinutes ? (
+                      {locked && lesson.availableAt ? (
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(lesson.availableAt, { month: "short", day: "numeric" })}
+                        </span>
+                      ) : lesson.durationMinutes ? (
                         <span className="text-xs">{formatDuration(lesson.durationMinutes)}</span>
                       ) : null}
                     </Link>

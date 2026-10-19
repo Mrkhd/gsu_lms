@@ -40,6 +40,7 @@ export type BuilderLesson = {
   pdfUrl: string | null
   durationMinutes: number | null
   isPreview: boolean
+  availableAt: Date | string | null
 }
 
 export type BuilderSection = {

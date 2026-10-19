@@ -139,6 +139,7 @@ export async function CourseEditor({
                 pdfUrl: lesson.pdfUrl,
                 durationMinutes: lesson.durationMinutes,
                 isPreview: lesson.isPreview,
+                availableAt: lesson.availableAt,
               })),
             }))}
           />

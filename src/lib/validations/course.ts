@@ -66,6 +66,15 @@ export const lessonSchema = z
       .union([z.boolean(), z.literal("true"), z.literal("false"), z.literal("on")])
       .optional()
       .transform((value) => value === true || value === "true" || value === "on"),
+    /** ISO datetime string; empty = available immediately. */
+    availableAt: z
+      .union([z.literal(""), z.string()])
+      .optional()
+      .transform((value) => {
+        if (!value) return null
+        const date = new Date(value)
+        return Number.isNaN(date.getTime()) ? null : date
+      }),
   })
   .refine((data) => data.type !== "VIDEO" || !!data.videoUrl, {
     message: "A video URL is required for video lessons",

@@ -13,6 +13,15 @@ export const assignmentSchema = z.object({
       const date = new Date(value)
       return Number.isNaN(date.getTime()) ? null : date
     }),
+  availableAt: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => {
+      if (!value) return null
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? null : date
+    }),
   maxPoints: z.coerce.number().int().min(1, "Max points must be at least 1").max(1000).default(100),
 })
 

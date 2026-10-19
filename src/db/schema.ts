@@ -158,6 +158,8 @@ export const lessons = sqliteTable(
     durationMinutes: integer("duration_minutes"),
     position: integer("position").notNull().default(0),
     isPreview: integer("is_preview", { mode: "boolean" }).notNull().default(false),
+    /** When set, students cannot open the lesson before this date. */
+    availableAt: integer("available_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -519,6 +521,8 @@ export const assignments = sqliteTable(
     title: text("title").notNull(),
     description: text("description"),
     dueAt: integer("due_at", { mode: "timestamp_ms" }),
+    /** When set, students cannot open or submit the assignment before this date. */
+    availableAt: integer("available_at", { mode: "timestamp_ms" }),
     maxPoints: integer("max_points").notNull().default(100),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
