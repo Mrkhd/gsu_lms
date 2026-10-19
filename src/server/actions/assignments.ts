@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache"
 import { eq } from "drizzle-orm"
 
 import { getDb } from "@/db/client"
-import { assignmentSubmissions, assignments, courses } from "@/db/schema"
+import { assignmentSubmissions, assignments, courses, users } from "@/db/schema"
 import { mediaKey, putObject } from "@/db/storage"
 import { getCourseAccess } from "@/lib/access"
+import { sendNotificationEmail } from "@/lib/email"
 import { requireActionRole, requireActionUser } from "@/lib/auth/server"
 import { assignmentSchema, gradeSchema } from "@/lib/validations"
 import {
@@ -206,7 +207,12 @@ export async function gradeSubmissionAction(
     await requireActionRole("ADMIN", "INSTRUCTOR")
     const db = getDb()
     const [submission] = await db
-      .select({ id: assignmentSubmissions.id, courseId: assignmentSubmissions.courseId })
+      .select({
+        id: assignmentSubmissions.id,
+        courseId: assignmentSubmissions.courseId,
+        assignmentId: assignmentSubmissions.assignmentId,
+        studentId: assignmentSubmissions.studentId,
+      })
       .from(assignmentSubmissions)
       .where(eq(assignmentSubmissions.id, parsed.data.submissionId))
       .limit(1)
@@ -224,6 +230,24 @@ export async function gradeSubmissionAction(
         updatedAt: new Date(),
       })
       .where(eq(assignmentSubmissions.id, submission.id))
+
+    const [student] = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, submission.studentId))
+      .limit(1)
+    const [assignmentInfo] = await db
+      .select({ title: assignments.title })
+      .from(assignments)
+      .where(eq(assignments.id, submission.assignmentId))
+      .limit(1)
+    if (student) {
+      await sendNotificationEmail(student.email, {
+        title: "Assignment graded",
+        body: `Your submission for ${assignmentInfo?.title ?? "an assignment"} was graded: ${parsed.data.grade} points.`,
+        url: `/learn/${course.slug}/assignments`,
+      })
+    }
 
     refreshCourse(course.id, course.slug)
     return success("Grade saved.")

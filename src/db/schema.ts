@@ -666,6 +666,36 @@ export const formSubmissions = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
+// Inbound email (replies to instructors)
+// ---------------------------------------------------------------------------
+
+export const inboundEmails = sqliteTable(
+  "inbound_emails",
+  {
+    id: text("id").primaryKey().$defaultFn(cuid),
+    resendEmailId: text("resend_email_id").notNull(),
+    recipientUserId: text("recipient_user_id"),
+    fromEmail: text("from_email").notNull(),
+    fromName: text("from_name"),
+    toEmail: text("to_email").notNull(),
+    subject: text("subject"),
+    textBody: text("text_body"),
+    htmlBody: text("html_body"),
+    messageId: text("message_id"),
+    receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+    readAt: integer("read_at", { mode: "timestamp_ms" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("inbound_emails_resend_email_id_key").on(t.resendEmailId),
+    index("inbound_emails_recipient_idx").on(t.recipientUserId, t.readAt),
+    foreignKey({ columns: [t.recipientUserId], foreignColumns: [users.id], name: "inbound_emails_recipient_fkey" }).onDelete(
+      "set null"
+    ),
+  ]
+)
+
+// ---------------------------------------------------------------------------
 // Relations (for db.query.*)
 // ---------------------------------------------------------------------------
 

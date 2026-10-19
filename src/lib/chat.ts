@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, or } from "drizzle-orm"
+import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm"
 
 import { getDb } from "@/db/client"
 import {
@@ -7,9 +7,11 @@ import {
   enrollments,
   messages,
   notifications,
+  users,
 } from "@/db/schema"
 import type { ConversationType, Role } from "@/db/types"
 import { getCourseAccess } from "@/lib/access"
+import { sendNotificationEmail } from "@/lib/email"
 
 export type ChatUser = { id: string; role: Role }
 
@@ -139,13 +141,31 @@ export async function notifyConversationMessage(
   const recipientIds = (await getRecipientIds(loaded)).filter((id) => id !== senderId)
   if (recipientIds.length === 0) return
   const db = getDb()
+  const title = `New message from ${senderName}`
+  const body = preview.slice(0, 140)
+
   await db.insert(notifications).values(
     recipientIds.map((userId) => ({
       userId,
-      title: `New message from ${senderName}`,
-      body: preview.slice(0, 140),
+      title,
+      body,
       url: chatUrlFor(loaded, userId, loaded.conversation.type),
     }))
+  )
+
+  // Email mirror of the notification (best-effort).
+  const recipients = await db
+    .select({ id: users.id, email: users.email })
+    .from(users)
+    .where(inArray(users.id, recipientIds))
+  await Promise.allSettled(
+    recipients.map((recipient) =>
+      sendNotificationEmail(recipient.email, {
+        title,
+        body,
+        url: chatUrlFor(loaded, recipient.id, loaded.conversation.type),
+      })
+    )
   )
 }
 

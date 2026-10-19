@@ -8,6 +8,7 @@ import { getDb } from "@/db/client"
 import { formSubmissions, forms } from "@/db/schema"
 import type { PublishStatus } from "@/db/types"
 import { requireActionRole } from "@/lib/auth/server"
+import { sendNotificationEmail } from "@/lib/email"
 import { formSchema, formSubmissionSchema } from "@/lib/validations"
 import {
   failure,
@@ -125,7 +126,7 @@ export async function submitFormAction(
   try {
     const db = getDb()
     const [form] = await db
-      .select({ id: forms.id, status: forms.status, fields: forms.fields })
+      .select({ id: forms.id, title: forms.title, status: forms.status, fields: forms.fields })
       .from(forms)
       .where(eq(forms.id, formId))
       .limit(1)
@@ -163,6 +164,10 @@ export async function submitFormAction(
     }
 
     await db.insert(formSubmissions).values({ formId, name, email, answers })
+    await sendNotificationEmail(email, {
+      title: "We received your response",
+      body: `Thank you, ${name}. Your response to "${form.title}" has been recorded.`,
+    })
     revalidatePath(`/admin/forms/${formId}`)
     return success("Your response has been submitted. Thank you!")
   } catch (error) {

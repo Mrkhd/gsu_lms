@@ -19,6 +19,19 @@ export const updateSemesterEnrollmentSchema = z.object({
   accessDurationDays: accessDurationField,
 })
 
+export const emailStudentsSchema = z.object({
+  courseId: z.string().min(1),
+  subject: z.string().trim().min(1, "Subject is required").max(200),
+  message: z.string().trim().min(1, "Message is required").max(5000),
+})
+
+export const emailStudentSchema = z.object({
+  courseId: z.string().min(1),
+  studentId: z.string().min(1),
+  subject: z.string().trim().min(1, "Subject is required").max(200),
+  message: z.string().trim().min(1, "Message is required").max(5000),
+})
+
 export const grantCourseLockSchema = z.object({
   studentId: z.string().min(1),
   courseId: z.string().min(1),

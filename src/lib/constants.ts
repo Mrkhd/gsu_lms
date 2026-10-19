@@ -5,6 +5,7 @@ import {
   ClipboardList,
   FolderTree,
   GraduationCap,
+  Inbox,
   LayoutDashboard,
   School,
   Settings,
@@ -75,6 +76,7 @@ export const INSTRUCTOR_NAV: NavSection[] = [
     label: "Teaching",
     items: [
       { label: "My Courses", href: "/instructor/courses", icon: BookOpen },
+      { label: "Inbox", href: "/instructor/inbox", icon: Inbox },
       { label: "Notifications", href: "/notifications", icon: Bell },
     ],
   },

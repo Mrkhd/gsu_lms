@@ -7,12 +7,15 @@ import { getDb } from "@/db/client"
 import {
   bundleCourses,
   bundleEnrollments,
+  bundles,
   courseLocks,
   enrollments,
+  profiles,
   programSemesters,
   users,
 } from "@/db/schema"
 import { grantBundleAccess, grantProgramEnrollment } from "@/lib/access"
+import { sendNotificationEmail } from "@/lib/email"
 import { requireActionRole } from "@/lib/auth/server"
 import { addDays } from "@/lib/format"
 import { grantEnrollmentSchema, updateSemesterEnrollmentSchema } from "@/lib/validations"
@@ -44,11 +47,23 @@ export async function grantEnrollmentAction(
   try {
     const db = getDb()
     const [student] = await db
-      .select({ id: users.id, role: users.role })
+      .select({
+        id: users.id,
+        role: users.role,
+        email: users.email,
+        firstName: profiles.firstName,
+      })
       .from(users)
+      .leftJoin(profiles, eq(profiles.userId, users.id))
       .where(eq(users.id, studentId))
       .limit(1)
     if (!student || student.role !== "STUDENT") return failure("Select a valid student.")
+
+    const [bundleInfo] = await db
+      .select({ title: bundles.title })
+      .from(bundles)
+      .where(eq(bundles.id, bundleId))
+      .limit(1)
 
     const [semester] = await db
       .select({ number: programSemesters.number })
@@ -76,6 +91,12 @@ export async function grantEnrollmentAction(
       studentId,
       programId,
       currentSemester: semester.number,
+    })
+
+    await sendNotificationEmail(student.email, {
+      title: "Semester assigned",
+      body: `You have been assigned to ${bundleInfo?.title ?? "a semester"}. You can start learning now.`,
+      url: "/dashboard/program",
     })
 
     refreshEnrollments(studentId)

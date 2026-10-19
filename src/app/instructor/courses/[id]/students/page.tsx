@@ -1,10 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { EnrollmentStatus } from "@/db/types"
-import { ArrowLeft, Users } from "lucide-react"
+import { ArrowLeft, Mail, Users } from "lucide-react"
 
 import { ENROLLMENT_STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
+import { EmailStudentDialog } from "@/components/instructor/email-student-dialog"
+import { EmailStudentsDialog } from "@/components/instructor/email-students-dialog"
 import { EmptyState } from "@/components/empty-state"
 import { StatusBadge } from "@/components/status-badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -67,6 +69,17 @@ export default async function InstructorCourseStudentsPage({
       <PageHeader
         title="Enrolled students"
         description={`${students.length} students in ${course.title}`}
+        actions={
+          <EmailStudentsDialog
+            courseId={course.id}
+            trigger={
+              <Button size="sm" variant="outline">
+                <Mail />
+                Email students
+              </Button>
+            }
+          />
+        }
       />
 
       <TableFilters
@@ -86,6 +99,7 @@ export default async function InstructorCourseStudentsPage({
                 <TableHead>Status</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Access expires</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -117,6 +131,21 @@ export default async function InstructorCourseStudentsPage({
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {enrollment.expiresAt ? formatDate(enrollment.expiresAt) : "Lifetime"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end">
+                      <EmailStudentDialog
+                        courseId={course.id}
+                        studentId={enrollment.studentId}
+                        studentName={fullName(student.profile, student.email)}
+                        trigger={
+                          <Button variant="ghost" size="sm">
+                            <Mail />
+                            Email
+                          </Button>
+                        }
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

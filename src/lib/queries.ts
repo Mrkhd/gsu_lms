@@ -13,6 +13,7 @@ import {
   enrollments,
   formSubmissions,
   forms,
+  inboundEmails,
   lessonProgress,
   lessons,
   orderItems,
@@ -1303,3 +1304,34 @@ export async function getFormSubmissions(formId: string) {
 }
 
 export type FormSubmissionRow = Awaited<ReturnType<typeof getFormSubmissions>>[number]
+
+// ---------------------------------------------------------------------------
+// Instructor inbox (inbound email replies)
+// ---------------------------------------------------------------------------
+
+export async function getInstructorInbox(userId: string) {
+  const db = getDb()
+  return db
+    .select()
+    .from(inboundEmails)
+    .where(eq(inboundEmails.recipientUserId, userId))
+    .orderBy(desc(inboundEmails.receivedAt))
+}
+
+export async function getInstructorInboundEmail(userId: string, id: string) {
+  const db = getDb()
+  const [row] = await db
+    .select()
+    .from(inboundEmails)
+    .where(and(eq(inboundEmails.id, id), eq(inboundEmails.recipientUserId, userId)))
+    .limit(1)
+  return row ?? null
+}
+
+export async function markInboundEmailRead(userId: string, id: string) {
+  const db = getDb()
+  await db
+    .update(inboundEmails)
+    .set({ readAt: new Date() })
+    .where(and(eq(inboundEmails.id, id), eq(inboundEmails.recipientUserId, userId)))
+}
