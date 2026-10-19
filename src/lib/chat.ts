@@ -153,7 +153,9 @@ export async function notifyConversationMessage(
     }))
   )
 
-  // Email mirror of the notification (best-effort).
+  // Email mirror only for direct messages — group chat stays in-app only.
+  if (loaded.conversation.type !== "DIRECT") return
+
   const recipients = await db
     .select({ id: users.id, email: users.email })
     .from(users)
