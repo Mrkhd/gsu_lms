@@ -19,16 +19,25 @@ import { Label } from "@/components/ui/label"
 import { useActionForm } from "@/hooks/use-action-form"
 import { createSectionAction, updateSectionAction } from "@/server/actions/courses"
 
+function toLocalInput(value: Date | string | null | undefined) {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 export function SectionDialog({
   courseId,
   section,
   trigger,
 }: {
   courseId: string
-  section?: { id: string; title: string }
+  section?: { id: string; title: string; availableAt?: Date | string | null }
   trigger: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
+  const [availableAt, setAvailableAt] = React.useState(toLocalInput(section?.availableAt))
   const { state, pending, onSubmit } = useActionForm(
     section ? updateSectionAction : createSectionAction,
     { onSuccess: () => setOpen(false) }
@@ -41,11 +50,16 @@ export function SectionDialog({
         <DialogHeader>
           <DialogTitle>{section ? "Rename section" : "Add section"}</DialogTitle>
           <DialogDescription>
-            Sections group your lessons into a clear structure.
+            Sections group your lessons. Optionally release the whole section at once.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <input type="hidden" name="courseId" value={courseId} />
+          <input
+            type="hidden"
+            name="availableAt"
+            value={availableAt ? new Date(availableAt).toISOString() : ""}
+          />
           {section ? <input type="hidden" name="sectionId" value={section.id} /> : null}
           <FormError state={state} />
           <div className="space-y-2">
@@ -57,6 +71,18 @@ export function SectionDialog({
               required
               autoFocus
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="section-available">Release date (optional)</Label>
+            <Input
+              id="section-available"
+              type="datetime-local"
+              value={availableAt}
+              onChange={(event) => setAvailableAt(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Students can see the section but cannot open its lessons until this date.
+            </p>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={pending}>

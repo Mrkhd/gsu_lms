@@ -49,6 +49,14 @@ export const courseSchema = z.object({
 
 export const sectionSchema = z.object({
   title: z.string().trim().min(1, "Section title is required").max(160),
+  availableAt: z
+    .union([z.literal(""), z.string()])
+    .optional()
+    .transform((value) => {
+      if (!value) return null
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? null : date
+    }),
 })
 
 export const lessonSchema = z

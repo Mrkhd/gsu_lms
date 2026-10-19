@@ -130,6 +130,7 @@ export async function CourseEditor({
             sections={course.sections.map((section) => ({
               id: section.id,
               title: section.title,
+              availableAt: section.availableAt,
               lessons: section.lessons.map((lesson) => ({
                 id: lesson.id,
                 title: lesson.title,

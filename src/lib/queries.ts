@@ -494,10 +494,12 @@ export async function getLearningCourse(studentId: string, slug: string) {
   const firstIncomplete = flat.find((lesson) => !lesson.progress[0]?.completed) ?? null
   const resumeLesson = lastViewed && !lastViewed.progress[0]?.completed ? lastViewed : firstIncomplete
   const lastLesson = flat[flat.length - 1] ?? null
+  const now = Date.now()
 
   return {
     course,
     lessons: flat,
+    now,
     completed,
     total,
     progress: percent(completed, total),

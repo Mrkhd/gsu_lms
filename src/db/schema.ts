@@ -133,6 +133,8 @@ export const courseSections = sqliteTable(
     courseId: text("course_id").notNull(),
     title: text("title").notNull(),
     position: integer("position").notNull().default(0),
+    /** When set, students cannot open lessons in this section before this date. */
+    availableAt: integer("available_at", { mode: "timestamp_ms" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

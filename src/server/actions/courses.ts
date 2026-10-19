@@ -225,9 +225,12 @@ export async function createSectionAction(
     if (!parsed.success) return fromZodError(parsed.error)
     const db = getDb()
     const position = await nextSectionPosition(course.id)
-    await db
-      .insert(courseSections)
-      .values({ courseId: course.id, title: parsed.data.title, position })
+    await db.insert(courseSections).values({
+      courseId: course.id,
+      title: parsed.data.title,
+      availableAt: parsed.data.availableAt,
+      position,
+    })
     refreshCourse(course.id, course.slug)
     return success("Section added.")
   } catch (error) {
@@ -253,7 +256,11 @@ export async function updateSectionAction(
     if (!parsed.success) return fromZodError(parsed.error)
     await db
       .update(courseSections)
-      .set({ title: parsed.data.title, updatedAt: new Date() })
+      .set({
+        title: parsed.data.title,
+        availableAt: parsed.data.availableAt,
+        updatedAt: new Date(),
+      })
       .where(eq(courseSections.id, section.id))
     refreshCourse(course.id, course.slug)
     return success("Section renamed.")

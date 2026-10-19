@@ -37,6 +37,7 @@ export type LearningLesson = {
   durationMinutes: number | null
   isPreview: boolean
   availableAt: string | null
+  locked: boolean
   sectionId: string
   sectionTitle: string
   completed: boolean
@@ -45,6 +46,8 @@ export type LearningLesson = {
 export type LearningSection = {
   id: string
   title: string
+  availableAt: string | null
+  locked: boolean
   lessons: LearningLesson[]
 }
 
@@ -254,15 +257,21 @@ function LessonSidebar({
       <div className="space-y-4">
         {sections.map((section) => (
           <div key={section.id} className="space-y-1">
-            <p className="px-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {section.title}
-            </p>
+            <div className="flex items-center justify-between gap-2 px-1">
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                {section.title}
+              </p>
+              {section.locked && section.availableAt ? (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Lock className="size-3" />
+                  {formatDate(section.availableAt, { month: "short", day: "numeric" })}
+                </span>
+              ) : null}
+            </div>
             <ul className="space-y-0.5">
               {section.lessons.map((lesson) => {
                 const active = lesson.id === currentLessonId
-                const locked = lesson.availableAt
-                  ? new Date(lesson.availableAt).getTime() > Date.now()
-                  : false
+                const locked = lesson.locked
                 return (
                   <li key={lesson.id}>
                     <Link

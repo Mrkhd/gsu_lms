@@ -11,6 +11,45 @@ import { requireUser } from "@/lib/auth/server"
 import { formatDate } from "@/lib/format"
 import { getLearningCourse } from "@/lib/queries"
 
+function ScheduledBlock({
+  label,
+  releaseAt,
+  courseSlug,
+}: {
+  label: string
+  releaseAt: Date
+  courseSlug: string
+}) {
+  return (
+    <div className="mx-auto w-full max-w-lg px-4 py-20">
+      <Card>
+        <CardHeader>
+          <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Lock className="size-5" />
+          </div>
+          <CardTitle>Scheduled material</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            &ldquo;{label}&rdquo; unlocks on{" "}
+            {formatDate(releaseAt, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+            .
+          </p>
+          <Button asChild variant="outline">
+            <Link href={`/courses/${courseSlug}`}>Back to course</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -45,60 +84,66 @@ export default async function LessonPage({
   const currentLesson = data.lessons.find((lesson) => lesson.id === lessonId)
   if (!currentLesson) notFound()
 
-  const scheduled =
-    currentLesson.availableAt &&
-    currentLesson.availableAt.getTime() > Date.now() &&
-    user.role === "STUDENT"
+  const now = data.now
+  const isStudent = user.role === "STUDENT"
+  const currentSection = data.course.sections.find(
+    (section) => section.id === currentLesson.sectionId
+  )
 
-  if (scheduled && currentLesson.availableAt) {
+  const sectionRelease = currentSection?.availableAt ?? null
+  const lessonRelease = currentLesson.availableAt ?? null
+  const sectionLocked = isStudent && !!sectionRelease && sectionRelease.getTime() > now
+  const lessonLocked = isStudent && !!lessonRelease && lessonRelease.getTime() > now
+
+  // A section release gates every lesson inside it; a lesson release gates itself.
+  if (sectionLocked && sectionRelease && currentSection) {
     return (
-      <div className="mx-auto w-full max-w-lg px-4 py-20">
-        <Card>
-          <CardHeader>
-            <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <Lock className="size-5" />
-            </div>
-            <CardTitle>Scheduled material</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              &ldquo;{currentLesson.title}&rdquo; unlocks on{" "}
-              {formatDate(currentLesson.availableAt, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-              .
-            </p>
-            <Button asChild variant="outline">
-              <Link href={`/courses/${data.course.slug}`}>Back to course</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ScheduledBlock
+        label={currentSection.title}
+        releaseAt={sectionRelease}
+        courseSlug={data.course.slug}
+      />
+    )
+  }
+  if (lessonLocked && lessonRelease) {
+    return (
+      <ScheduledBlock
+        label={currentLesson.title}
+        releaseAt={lessonRelease}
+        courseSlug={data.course.slug}
+      />
     )
   }
 
-  const sections: LearningSection[] = data.course.sections.map((section) => ({
-    id: section.id,
-    title: section.title,
-    lessons: section.lessons.map((lesson) => ({
-      id: lesson.id,
-      title: lesson.title,
-      type: lesson.type,
-      videoUrl: lesson.videoUrl,
-      content: lesson.content,
-      pdfUrl: lesson.pdfUrl,
-      durationMinutes: lesson.durationMinutes,
-      isPreview: lesson.isPreview,
-      availableAt: lesson.availableAt ? lesson.availableAt.toISOString() : null,
-      sectionId: section.id,
-      sectionTitle: section.title,
-      completed: lesson.progress[0]?.completed ?? false,
-    })),
-  }))
+  const sections: LearningSection[] = data.course.sections.map((section) => {
+    const sectionLock =
+      isStudent && !!section.availableAt && section.availableAt.getTime() > now
+    return {
+      id: section.id,
+      title: section.title,
+      availableAt: section.availableAt ? section.availableAt.toISOString() : null,
+      locked: sectionLock,
+      lessons: section.lessons.map((lesson) => {
+        const lessonLock =
+          isStudent && !!lesson.availableAt && lesson.availableAt.getTime() > now
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          type: lesson.type,
+          videoUrl: lesson.videoUrl,
+          content: lesson.content,
+          pdfUrl: lesson.pdfUrl,
+          durationMinutes: lesson.durationMinutes,
+          isPreview: lesson.isPreview,
+          availableAt: lesson.availableAt ? lesson.availableAt.toISOString() : null,
+          locked: sectionLock || lessonLock,
+          sectionId: section.id,
+          sectionTitle: section.title,
+          completed: lesson.progress[0]?.completed ?? false,
+        }
+      }),
+    }
+  })
 
   return (
     <LearningExperience

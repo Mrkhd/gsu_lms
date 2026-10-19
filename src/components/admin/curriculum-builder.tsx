@@ -46,6 +46,7 @@ export type BuilderLesson = {
 export type BuilderSection = {
   id: string
   title: string
+  availableAt: Date | string | null
   lessons: BuilderLesson[]
 }
 

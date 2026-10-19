@@ -1,12 +1,12 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 
 import { getDb } from "@/db/client"
 import { courses, lessonProgress, lessons } from "@/db/schema"
 import { getCourseAccess } from "@/lib/access"
-import { requireActionUser } from "@/lib/auth/server"
+import { requireActionRole, requireActionUser } from "@/lib/auth/server"
 import { success, toActionError, type ActionState } from "@/lib/action-utils"
 
 async function assertLessonAccess(lessonId: string, studentId: string) {
@@ -60,6 +60,38 @@ export async function toggleLessonCompleteAction(
       })
     refreshLearning(lesson.courseSlug)
     return success(completed ? "Lesson completed." : "Lesson marked as incomplete.")
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+/** Admin: clear every lesson completion/visit for a student in one course. */
+export async function resetCourseProgressAction(
+  studentId: string,
+  courseId: string
+): Promise<ActionState> {
+  try {
+    await requireActionRole("ADMIN")
+    const db = getDb()
+    await db
+      .delete(lessonProgress)
+      .where(
+        and(eq(lessonProgress.studentId, studentId), eq(lessonProgress.courseId, courseId))
+      )
+
+    const [course] = await db
+      .select({ slug: courses.slug })
+      .from(courses)
+      .where(eq(courses.id, courseId))
+      .limit(1)
+    if (course) {
+      revalidatePath(`/learn/${course.slug}`)
+    }
+    revalidatePath(`/admin/courses/${courseId}/students`)
+    revalidatePath(`/instructor/courses/${courseId}/students`)
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/my-courses")
+    return success("Student progress reset.")
   } catch (error) {
     return toActionError(error)
   }

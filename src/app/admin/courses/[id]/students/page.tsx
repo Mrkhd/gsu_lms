@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import type { EnrollmentStatus } from "@/db/types"
 import { ArrowLeft, Users } from "lucide-react"
 
+import { ActionButton } from "@/components/action-button"
 import { ENROLLMENT_STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -25,6 +26,7 @@ import { courses } from "@/db/schema"
 import { requireAdmin } from "@/lib/auth/server"
 import { formatDate, fullName, initials } from "@/lib/format"
 import { getCourseStudents } from "@/lib/queries"
+import { resetCourseProgressAction } from "@/server/actions/progress"
 
 export const metadata = { title: "Course students" }
 
@@ -85,6 +87,7 @@ export default async function AdminCourseStudentsPage({
                 <TableHead>Progress</TableHead>
                 <TableHead>Access expires</TableHead>
                 <TableHead>Enrolled</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,6 +124,28 @@ export default async function AdminCourseStudentsPage({
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDate(enrollment.createdAt)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end">
+                      <ActionButton
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        action={resetCourseProgressAction.bind(
+                          null,
+                          enrollment.studentId,
+                          course.id
+                        )}
+                        confirm={{
+                          title: "Reset this student's progress?",
+                          description:
+                            "All completed and viewed lessons for this course will be cleared.",
+                          confirmLabel: "Reset progress",
+                        }}
+                      >
+                        Reset progress
+                      </ActionButton>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
