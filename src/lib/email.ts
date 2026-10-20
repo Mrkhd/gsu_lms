@@ -117,7 +117,7 @@ export async function sendWelcomeEmail(params: {
   replyTo?: string
 }) {
   const { to, name, password, replyTo } = params
-  const appUrl = env.NEXT_PUBLIC_APP_URL
+  const loginUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/login`
   const subject = "Welcome to the Galmudug State University Postgraduate LMS"
 
   const text = `Dear ${name},
@@ -125,7 +125,7 @@ export async function sendWelcomeEmail(params: {
 Welcome to Galmudug State University! We are pleased to inform you that your account on our Postgraduate Learning Management System (LMS) is now ready.
 
 You can access the platform here:
-${appUrl}
+${loginUrl}
 
 Your login details:
 Email: ${to}
@@ -148,7 +148,7 @@ Galmudug State University`
     subject,
     `<p>Dear ${escapeHtml(name)},</p>
      <p>Welcome to Galmudug State University! We are pleased to inform you that your account on our Postgraduate Learning Management System (LMS) is now ready.</p>
-     <p>You can access the platform here:<br /><a href="${appUrl}">${appUrl}</a></p>
+     <p>You can access the platform here:<br /><a href="${loginUrl}">${loginUrl}</a></p>
      <p><strong>Your login details:</strong><br />Email: ${escapeHtml(to)}<br />Password: ${escapeHtml(password)}</p>
      <p>For your security, please log in as soon as possible and change your password after your first login. Do not share your login details with anyone.</p>
      <p>On the platform you will be able to access your course materials, assignments, announcements, and communicate with your lecturers.</p>
