@@ -102,6 +102,63 @@ export async function sendNotificationEmail(
   })
 }
 
+/** Welcome email sent when an admin creates a student or instructor account. */
+export async function sendWelcomeEmail(params: {
+  to: string
+  name: string
+  password: string
+  replyTo?: string
+}) {
+  const { to, name, password, replyTo } = params
+  const appUrl = env.NEXT_PUBLIC_APP_URL
+  const subject = "Welcome to the Galmudug State University Postgraduate LMS"
+
+  const text = `Dear ${name},
+
+Welcome to Galmudug State University! We are pleased to inform you that your account on our Postgraduate Learning Management System (LMS) is now ready.
+
+You can access the platform here:
+${appUrl}
+
+Your login details:
+Email: ${to}
+Password: ${password}
+
+For your security, please log in as soon as possible and change your password after your first login. Do not share your login details with anyone.
+
+On the platform you will be able to access your course materials, assignments, announcements, and communicate with your lecturers.
+
+If you have trouble logging in or have any questions, please reply to this email and we will be happy to help.
+
+We wish you a successful and rewarding academic journey.
+
+Best regards,
+Khalid Nur
+Postgraduate admissions
+Galmudug State University`
+
+  const html = emailLayout(
+    subject,
+    `<p>Dear ${escapeHtml(name)},</p>
+     <p>Welcome to Galmudug State University! We are pleased to inform you that your account on our Postgraduate Learning Management System (LMS) is now ready.</p>
+     <p>You can access the platform here:<br /><a href="${appUrl}">${appUrl}</a></p>
+     <p><strong>Your login details:</strong><br />Email: ${escapeHtml(to)}<br />Password: ${escapeHtml(password)}</p>
+     <p>For your security, please log in as soon as possible and change your password after your first login. Do not share your login details with anyone.</p>
+     <p>On the platform you will be able to access your course materials, assignments, announcements, and communicate with your lecturers.</p>
+     <p>If you have trouble logging in or have any questions, please reply to this email and we will be happy to help.</p>
+     <p>We wish you a successful and rewarding academic journey.</p>
+     <p>Best regards,<br />Khalid Nur<br />Postgraduate admissions<br />Galmudug State University</p>`
+  )
+
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text,
+    replyTo: replyTo ?? `admissions@${env.EMAIL_DOMAIN}`,
+  })
+}
+
 /** Splits recipients into Resend-safe batches (max 50 per request). */
 export function chunkRecipients(emails: string[], size = 50) {
   const chunks: string[][] = []

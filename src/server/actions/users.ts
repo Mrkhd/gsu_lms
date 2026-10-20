@@ -8,6 +8,7 @@ import { profiles, users } from "@/db/schema"
 import type { Role, UserStatus } from "@/db/types"
 import { requireActionRole } from "@/lib/auth/server"
 import { hashPassword } from "@/lib/auth/password"
+import { sendWelcomeEmail } from "@/lib/email"
 import { createUserSchema } from "@/lib/validations"
 import {
   failure,
@@ -28,7 +29,7 @@ export async function createUserAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireActionRole("ADMIN")
+  const admin = await requireActionRole("ADMIN")
   const parsed = createUserSchema.safeParse(formDataToObject(formData))
   if (!parsed.success) return fromZodError(parsed.error)
   const { firstName, lastName, email, password, role } = parsed.data
@@ -47,8 +48,16 @@ export async function createUserAction(
     const passwordHash = await hashPassword(password)
     const [user] = await db.insert(users).values({ email, passwordHash, role }).returning()
     await db.insert(profiles).values({ userId: user.id, firstName, lastName })
+
+    await sendWelcomeEmail({
+      to: email,
+      name: [firstName, lastName].filter(Boolean).join(" "),
+      password,
+      replyTo: admin.email,
+    })
+
     refreshUsers()
-    return success("User created.")
+    return success("User created and welcome email sent.")
   } catch (error) {
     return toActionError(error)
   }
