@@ -25,13 +25,20 @@ export function escapeHtml(value: string) {
 }
 
 export function emailLayout(title: string, bodyHtml: string) {
+  const logoUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/logo.png`
   return `<!doctype html>
 <html>
   <body style="margin:0;padding:24px;background:#f6f6f6;font-family:Arial,Helvetica,sans-serif;color:#111">
-    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;padding:24px">
-      <h1 style="font-size:18px;margin:0 0 16px">${escapeHtml(title)}</h1>
-      ${bodyHtml}
-      <p style="margin-top:24px;font-size:12px;color:#666">GSU Postgraduate</p>
+    <div style="max-width:560px;margin:0 auto">
+      <div style="text-align:center;padding-bottom:16px">
+        <img src="${logoUrl}" alt="GSU Postgraduate" width="64" height="64" style="display:inline-block;width:64px;height:64px;border:0;outline:none;text-decoration:none;border-radius:8px" />
+      </div>
+      <div style="background:#ffffff;border-radius:8px;padding:24px">
+        <h1 style="font-size:18px;margin:0 0 16px">${escapeHtml(title)}</h1>
+        ${bodyHtml}
+        <p style="margin-top:24px;font-size:12px;color:#666">GSU Postgraduate</p>
+      </div>
+      <p style="margin:16px 0 0;text-align:center;font-size:11px;color:#999">Galmudug State University · Postgraduate LMS</p>
     </div>
   </body>
 </html>`
