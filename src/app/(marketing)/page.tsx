@@ -100,9 +100,9 @@ export default function HomePage() {
               <Link href="/register">Apply Now</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <a href="/gsu-brochure.pdf" download>
+              <a href="/gsu-brochure.pdf" target="_blank" rel="noopener noreferrer">
                 <Download className="size-4" />
-                Download Brochure
+                View Brochure
               </a>
             </Button>
           </div>
