@@ -100,10 +100,10 @@ export default function HomePage() {
               <Link href="/register">Apply Now</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/programs">
+              <a href="/gsu-brochure.pdf" download>
                 <Download className="size-4" />
                 Download Brochure
-              </Link>
+              </a>
             </Button>
           </div>
         </div>
