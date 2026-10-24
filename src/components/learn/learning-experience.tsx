@@ -48,6 +48,10 @@ export type LearningSection = {
   title: string
   availableAt: string | null
   locked: boolean
+  lockReason: "time" | "assignment" | null
+  releaseAt: string | null
+  week: number | null
+  assignments: { id: string; title: string; submitted: boolean }[]
   lessons: LearningLesson[]
 }
 
@@ -261,10 +265,12 @@ function LessonSidebar({
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 {section.title}
               </p>
-              {section.locked && section.availableAt ? (
+              {section.locked ? (
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <Lock className="size-3" />
-                  {formatDate(section.availableAt, { month: "short", day: "numeric" })}
+                  {section.lockReason === "time" && section.releaseAt
+                    ? formatDate(section.releaseAt, { month: "short", day: "numeric" })
+                    : "Assignment due"}
                 </span>
               ) : null}
             </div>
@@ -305,6 +311,29 @@ function LessonSidebar({
                 )
               })}
             </ul>
+            {section.assignments.length > 0 ? (
+              <ul className="mt-1 space-y-0.5 border-t pt-1">
+                {section.assignments.map((assignment) => (
+                  <li key={assignment.id}>
+                    <Link
+                      href={`/learn/${courseSlug}/assignments`}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                        section.locked
+                          ? "text-muted-foreground/60"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <ClipboardList className="size-4 shrink-0" />
+                      <span className="line-clamp-2 flex-1">{assignment.title}</span>
+                      {assignment.submitted ? (
+                        <CircleCheck className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      ) : null}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         ))}
       </div>

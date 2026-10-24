@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { getCourseAccess } from "@/lib/access"
 import { requireUser } from "@/lib/auth/server"
 import { getLearningCourse, getStudentCourseAssignments } from "@/lib/queries"
+import { assignmentAvailability } from "@/lib/weeks"
 
 export const metadata = { title: "Assignments" }
 
@@ -34,6 +35,34 @@ export default async function CourseAssignmentsPage({
 
   const assignments = await getStudentCourseAssignments(user.id, data.course.id)
 
+  const now = data.now
+  const isStudent = user.role === "STUDENT"
+  const enrollmentStart = access.enrollment?.startedAt ?? new Date(now)
+  const submittedIds = new Set(
+    assignments.filter((assignment) => assignment.submission).map((assignment) => assignment.id)
+  )
+  const decorated = assignments.map((assignment) => {
+    const state = isStudent
+      ? assignmentAvailability({
+          assignment,
+          allAssignments: assignments,
+          submittedIds,
+          enrollmentStart,
+          now,
+        })
+      : {
+          locked: false,
+          reason: null as "time" | "assignment" | null,
+          releaseAt: null,
+        }
+    return {
+      ...assignment,
+      locked: state.locked,
+      lockReason: state.reason,
+      releaseAt: state.releaseAt ? state.releaseAt.toISOString() : null,
+    }
+  })
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
       <div className="flex items-center gap-2">
@@ -54,7 +83,7 @@ export default async function CourseAssignmentsPage({
         <h1 className="font-heading text-2xl font-semibold">Assignments</h1>
         <p className="text-sm text-muted-foreground">{data.course.title}</p>
       </div>
-      <StudentAssignments assignments={assignments} />
+      <StudentAssignments assignments={decorated} />
     </div>
   )
 }

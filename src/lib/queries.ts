@@ -497,9 +497,23 @@ export async function getLearningCourse(studentId: string, slug: string) {
   const lastLesson = flat[flat.length - 1] ?? null
   const now = Date.now()
 
+  const assignmentRows = await db.query.assignments.findMany({
+    where: eq(assignments.courseId, course.id),
+    with: {
+      submissions: { where: eq(assignmentSubmissions.studentId, studentId) },
+    },
+    orderBy: (a, { asc: orderAsc }) => [orderAsc(a.createdAt)],
+  })
+
   return {
     course,
     lessons: flat,
+    assignments: assignmentRows.map((assignment) => ({
+      id: assignment.id,
+      title: assignment.title,
+      dueAt: assignment.dueAt,
+      submitted: assignment.submissions.length > 0,
+    })),
     now,
     completed,
     total,

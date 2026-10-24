@@ -11,7 +11,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { formatDate } from "@/lib/format"
 import { idleState } from "@/lib/action-utils"
 import type { StudentAssignmentItem } from "@/lib/queries"
+import { weekNumberFromTitle } from "@/lib/weeks"
 import { submitAssignmentAction } from "@/server/actions/assignments"
+
+type AssignmentWithAccess = StudentAssignmentItem & {
+  locked: boolean
+  lockReason: "time" | "assignment" | null
+  releaseAt: string | null
+}
 
 function SubmitForm({
   assignmentId,
@@ -67,7 +74,7 @@ function SubmitForm({
   )
 }
 
-export function StudentAssignments({ assignments }: { assignments: StudentAssignmentItem[] }) {
+export function StudentAssignments({ assignments }: { assignments: AssignmentWithAccess[] }) {
   if (assignments.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">No assignments have been set for this course.</p>
@@ -96,10 +103,12 @@ export function StudentAssignments({ assignments }: { assignments: StudentAssign
                     ) : null}
                   </p>
                 </div>
-                {locked && assignment.availableAt ? (
+                {locked ? (
                   <Badge variant="outline">
                     <Lock className="size-3" />
-                    Opens {formatDate(assignment.availableAt, { month: "short", day: "numeric" })}
+                    {assignment.lockReason === "time" && assignment.releaseAt
+                      ? `Opens ${formatDate(assignment.releaseAt, { month: "short", day: "numeric" })}`
+                      : "Previous week required"}
                   </Badge>
                 ) : graded ? (
                   <Badge variant="default">
@@ -113,17 +122,19 @@ export function StudentAssignments({ assignments }: { assignments: StudentAssign
                 )}
               </div>
 
-              {locked && assignment.availableAt ? (
+              {locked ? (
                 <p className="text-sm text-muted-foreground">
-                  This assignment unlocks on{" "}
-                  {formatDate(assignment.availableAt, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                  .
+                  {assignment.lockReason === "time" && assignment.releaseAt
+                    ? `This assignment unlocks on ${formatDate(assignment.releaseAt, {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}.`
+                    : `Submit the Week ${
+                        (weekNumberFromTitle(assignment.title) ?? 1) - 1
+                      } assignment(s) to unlock this week.`}
                 </p>
               ) : assignment.description ? (
                 <p className="whitespace-pre-line text-sm text-muted-foreground">

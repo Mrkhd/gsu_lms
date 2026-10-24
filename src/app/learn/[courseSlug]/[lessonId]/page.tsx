@@ -10,15 +10,20 @@ import { getCourseAccess } from "@/lib/access"
 import { requireUser } from "@/lib/auth/server"
 import { formatDate } from "@/lib/format"
 import { getLearningCourse } from "@/lib/queries"
+import { sectionAvailability, weekNumberFromTitle } from "@/lib/weeks"
 
-function ScheduledBlock({
-  label,
-  releaseAt,
+function LockedBlock({
+  title,
+  message,
   courseSlug,
+  actionHref,
+  actionLabel,
 }: {
-  label: string
-  releaseAt: Date
+  title: string
+  message: string
   courseSlug: string
+  actionHref?: string
+  actionLabel?: string
 }) {
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-20">
@@ -27,23 +32,20 @@ function ScheduledBlock({
           <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Lock className="size-5" />
           </div>
-          <CardTitle>Scheduled material</CardTitle>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            &ldquo;{label}&rdquo; unlocks on{" "}
-            {formatDate(releaseAt, {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-            .
-          </p>
-          <Button asChild variant="outline">
-            <Link href={`/courses/${courseSlug}`}>Back to course</Link>
-          </Button>
+          <p className="text-sm text-muted-foreground">{message}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href={`/courses/${courseSlug}`}>Back to course</Link>
+            </Button>
+            {actionHref ? (
+              <Button asChild>
+                <Link href={actionHref}>{actionLabel ?? "Continue"}</Link>
+              </Button>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -86,43 +88,112 @@ export default async function LessonPage({
 
   const now = data.now
   const isStudent = user.role === "STUDENT"
+  const enrollmentStart = access.enrollment?.startedAt ?? new Date(now)
+  const submittedIds = new Set(
+    data.assignments.filter((assignment) => assignment.submitted).map((assignment) => assignment.id)
+  )
+
+  const weekAccess = (sectionTitle: string, sectionAvailableAt: Date | null) => {
+    const week = weekNumberFromTitle(sectionTitle)
+    if (!isStudent) {
+      return {
+        locked: false,
+        reason: null as "time" | "assignment" | null,
+        releaseAt: null,
+        week,
+      }
+    }
+    return sectionAvailability({
+      week,
+      sectionAvailableAt,
+      enrollmentStart,
+      now,
+      allAssignments: data.assignments,
+      submittedIds,
+    })
+  }
+
   const currentSection = data.course.sections.find(
     (section) => section.id === currentLesson.sectionId
   )
-
-  const sectionRelease = currentSection?.availableAt ?? null
+  const currentAccess = weekAccess(
+    currentSection?.title ?? "",
+    currentSection?.availableAt ?? null
+  )
   const lessonRelease = currentLesson.availableAt ?? null
-  const sectionLocked = isStudent && !!sectionRelease && sectionRelease.getTime() > now
   const lessonLocked = isStudent && !!lessonRelease && lessonRelease.getTime() > now
 
-  // A section release gates every lesson inside it; a lesson release gates itself.
-  if (sectionLocked && sectionRelease && currentSection) {
+  if (currentAccess.locked) {
+    if (currentAccess.reason === "time" && currentAccess.releaseAt) {
+      return (
+        <LockedBlock
+          title="Scheduled material"
+          message={`“${currentSection?.title ?? currentLesson.title}” unlocks on ${formatDate(
+            currentAccess.releaseAt,
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }
+          )}.`}
+          courseSlug={data.course.slug}
+        />
+      )
+    }
     return (
-      <ScheduledBlock
-        label={currentSection.title}
-        releaseAt={sectionRelease}
+      <LockedBlock
+        title="Complete last week's assignment"
+        message={`Submit the Week ${(currentAccess.week ?? 1) - 1} assignment(s) to unlock “${
+          currentSection?.title ?? currentLesson.title
+        }”.`}
         courseSlug={data.course.slug}
+        actionHref={`/learn/${data.course.slug}/assignments`}
+        actionLabel="Go to assignments"
       />
     )
   }
+
   if (lessonLocked && lessonRelease) {
     return (
-      <ScheduledBlock
-        label={currentLesson.title}
-        releaseAt={lessonRelease}
+      <LockedBlock
+        title="Scheduled material"
+        message={`“${currentLesson.title}” unlocks on ${formatDate(lessonRelease, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })}.`}
         courseSlug={data.course.slug}
       />
     )
   }
 
   const sections: LearningSection[] = data.course.sections.map((section) => {
-    const sectionLock =
-      isStudent && !!section.availableAt && section.availableAt.getTime() > now
+    const state = weekAccess(section.title, section.availableAt ?? null)
+    const week = state.week
+    const sectionAssignments =
+      week === null
+        ? []
+        : data.assignments
+            .filter((assignment) => weekNumberFromTitle(assignment.title) === week)
+            .map((assignment) => ({
+              id: assignment.id,
+              title: assignment.title,
+              submitted: assignment.submitted,
+            }))
+
     return {
       id: section.id,
       title: section.title,
       availableAt: section.availableAt ? section.availableAt.toISOString() : null,
-      locked: sectionLock,
+      locked: state.locked,
+      lockReason: state.reason,
+      releaseAt: state.releaseAt ? state.releaseAt.toISOString() : null,
+      week,
+      assignments: sectionAssignments,
       lessons: section.lessons.map((lesson) => {
         const lessonLock =
           isStudent && !!lesson.availableAt && lesson.availableAt.getTime() > now
@@ -136,7 +207,7 @@ export default async function LessonPage({
           durationMinutes: lesson.durationMinutes,
           isPreview: lesson.isPreview,
           availableAt: lesson.availableAt ? lesson.availableAt.toISOString() : null,
-          locked: sectionLock || lessonLock,
+          locked: state.locked || lessonLock,
           sectionId: section.id,
           sectionTitle: section.title,
           completed: lesson.progress[0]?.completed ?? false,

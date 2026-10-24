@@ -1,13 +1,14 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 
 import { getDb } from "@/db/client"
 import { assignmentSubmissions, assignments, courses, users } from "@/db/schema"
 import { mediaKey, putObject } from "@/db/storage"
 import { getCourseAccess } from "@/lib/access"
 import { sendNotificationEmail } from "@/lib/email"
+import { assignmentAvailability } from "@/lib/weeks"
 import { requireActionRole, requireActionUser } from "@/lib/auth/server"
 import { assignmentSchema, gradeSchema } from "@/lib/validations"
 import {
@@ -134,6 +135,7 @@ export async function submitAssignmentAction(
     const [assignment] = await db
       .select({
         id: assignments.id,
+        title: assignments.title,
         courseId: assignments.courseId,
         availableAt: assignments.availableAt,
       })
@@ -148,6 +150,42 @@ export async function submitAssignmentAction(
 
     const access = await getCourseAccess(user.id, assignment.courseId)
     if (!access.hasAccess) return failure("Your access to this course has expired.")
+
+    // Weekly progression: previous week's assignments must be submitted, and the
+    // week must have started relative to this student's enrollment.
+    const now = Date.now()
+    const enrollmentStart = access.enrollment?.startedAt ?? new Date(now)
+    const [courseAssignments, submittedRows] = await Promise.all([
+      db
+        .select({ id: assignments.id, title: assignments.title })
+        .from(assignments)
+        .where(eq(assignments.courseId, assignment.courseId)),
+      db
+        .select({ assignmentId: assignmentSubmissions.assignmentId })
+        .from(assignmentSubmissions)
+        .where(
+          and(
+            eq(assignmentSubmissions.studentId, user.id),
+            eq(assignmentSubmissions.courseId, assignment.courseId)
+          )
+        ),
+    ])
+    const submittedIds = new Set(submittedRows.map((row) => row.assignmentId))
+    const availability = assignmentAvailability({
+      assignment: { id: assignment.id, title: assignment.title },
+      allAssignments: courseAssignments,
+      submittedIds,
+      enrollmentStart,
+      now,
+    })
+    if (availability.locked) {
+      if (availability.reason === "time") {
+        return failure("This assignment is not available yet.")
+      }
+      return failure(
+        `Submit the Week ${(availability.week ?? 1) - 1} assignment(s) to unlock this week.`
+      )
+    }
 
     const file = formData.get("file")
     if (!(file instanceof File) || file.size === 0) return failure("Choose a PDF file to upload.")
