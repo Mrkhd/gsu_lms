@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { VideoPlayer as ThemedVideoPlayer } from "@/components/learn/video-player"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -411,9 +412,5 @@ function VideoPlayer({ url, title }: { url: string | null; title: string }) {
       </div>
     )
   }
-  return (
-    <video src={embed.src} controls className="aspect-video w-full rounded-xl bg-black">
-      <track kind="captions" />
-    </video>
-  )
+  return <ThemedVideoPlayer src={embed.src} title={title} />
 }

@@ -7,7 +7,7 @@ import { getCourseAccess } from "@/lib/access"
 import { getCurrentUser } from "@/lib/auth/server"
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ key: string[] }> }
 ) {
   const user = await getCurrentUser()
@@ -43,10 +43,55 @@ export async function GET(
   const object = await getObject(key)
   if (!object) return new Response("Not found", { status: 404 })
 
-  const headers = new Headers()
-  headers.set("Content-Type", object.contentType)
-  headers.set("ETag", object.etag)
-  headers.set("Cache-Control", "private, max-age=3600")
+  const total = object.size
+  const baseHeaders: Record<string, string> = {
+    "Content-Type": object.contentType,
+    ETag: object.etag,
+    "Cache-Control": "private, max-age=3600",
+    "Accept-Ranges": "bytes",
+    "Content-Disposition": "inline",
+    "X-Content-Type-Options": "nosniff",
+  }
 
-  return new Response(object.body as unknown as BodyInit, { headers })
+  const rangeHeader = request.headers.get("range")
+  if (rangeHeader) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim())
+    if (!match) {
+      return new Response("Invalid range", {
+        status: 416,
+        headers: { "Content-Range": `bytes */${total}` },
+      })
+    }
+
+    let start = match[1] ? Number(match[1]) : 0
+    let end = match[2] ? Number(match[2]) : total - 1
+
+    if (!match[1] && match[2]) {
+      const suffix = Number(match[2])
+      start = Math.max(0, total - suffix)
+      end = total - 1
+    }
+
+    if (Number.isNaN(start) || Number.isNaN(end) || start > end || start >= total) {
+      return new Response("Range not satisfiable", {
+        status: 416,
+        headers: { "Content-Range": `bytes */${total}` },
+      })
+    }
+
+    end = Math.min(end, total - 1)
+    const chunk = object.body.subarray(start, end + 1)
+    return new Response(chunk as unknown as BodyInit, {
+      status: 206,
+      headers: {
+        ...baseHeaders,
+        "Content-Length": String(chunk.byteLength),
+        "Content-Range": `bytes ${start}-${end}/${total}`,
+      },
+    })
+  }
+
+  return new Response(object.body as unknown as BodyInit, {
+    headers: { ...baseHeaders, "Content-Length": String(total) },
+  })
 }
