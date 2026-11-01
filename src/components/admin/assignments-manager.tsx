@@ -80,6 +80,7 @@ export function AssignmentsManager({
                       dueAt: assignment.dueAt,
                       availableAt: assignment.availableAt,
                       maxPoints: assignment.maxPoints,
+                      rubric: assignment.rubric,
                     }}
                     trigger={
                       <Button variant="ghost" size="icon-sm" aria-label="Edit assignment">

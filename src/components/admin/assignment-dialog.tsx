@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Plus, Trash2 } from "lucide-react"
 
 import { FormError } from "@/components/form-error"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,7 @@ type AssignmentDefaults = {
   dueAt: Date | null
   availableAt: Date | string | null
   maxPoints: number
+  rubric: { id: string; label: string; points: number }[]
 }
 
 function toDateInput(value: Date | null) {
@@ -53,6 +54,9 @@ export function AssignmentDialog({
 }) {
   const [open, setOpen] = React.useState(false)
   const [availableAt, setAvailableAt] = React.useState(toLocalInput(assignment?.availableAt))
+  const [rubric, setRubric] = React.useState(assignment?.rubric ?? [])
+  const updateCriterion = (id: string, patch: Partial<{ label: string; points: number }>) =>
+    setRubric((prev) => prev.map((criterion) => (criterion.id === id ? { ...criterion, ...patch } : criterion)))
   const { state, pending, onSubmit } = useActionForm(
     assignment ? updateAssignmentAction : createAssignmentAction,
     { onSuccess: () => setOpen(false) }
@@ -75,6 +79,7 @@ export function AssignmentDialog({
             name="availableAt"
             value={availableAt ? new Date(availableAt).toISOString() : ""}
           />
+          <input type="hidden" name="rubric" value={JSON.stringify(rubric)} />
           {assignment ? <input type="hidden" name="assignmentId" value={assignment.id} /> : null}
           <FormError state={state} />
           <div className="space-y-2">
@@ -112,6 +117,71 @@ export function AssignmentDialog({
               />
             </div>
           </div>
+          <div className="space-y-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between">
+              <Label>Rubric (optional)</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setRubric((prev) => [
+                    ...prev,
+                    { id: crypto.randomUUID(), label: "", points: 10 },
+                  ])
+                }
+              >
+                <Plus />
+                Add criterion
+              </Button>
+            </div>
+            {rubric.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Add criteria to grade with a rubric. Leave empty for a single grade.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {rubric.map((criterion, index) => (
+                  <div key={criterion.id} className="flex items-center gap-2">
+                    <Input
+                      value={criterion.label}
+                      onChange={(event) =>
+                        updateCriterion(criterion.id, { label: event.target.value })
+                      }
+                      placeholder={`Criterion ${index + 1}`}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1000}
+                      value={criterion.points}
+                      onChange={(event) =>
+                        updateCriterion(criterion.id, { points: Number(event.target.value) })
+                      }
+                      className="w-24"
+                      aria-label="Points"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setRubric((prev) => prev.filter((item) => item.id !== criterion.id))
+                      }
+                      aria-label="Remove criterion"
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  Rubric total: {rubric.reduce((sum, criterion) => sum + criterion.points, 0)} points
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="assignment-available">Release date (optional)</Label>
             <Input

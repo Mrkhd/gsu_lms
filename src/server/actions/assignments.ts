@@ -64,6 +64,7 @@ export async function createAssignmentAction(
       dueAt: parsed.data.dueAt,
       availableAt: parsed.data.availableAt,
       maxPoints: parsed.data.maxPoints,
+      rubric: parsed.data.rubric,
     })
     refreshCourse(course.id, course.slug)
     return success("Assignment created.")
@@ -96,6 +97,7 @@ export async function updateAssignmentAction(
         dueAt: parsed.data.dueAt,
         availableAt: parsed.data.availableAt,
         maxPoints: parsed.data.maxPoints,
+        rubric: parsed.data.rubric,
         updatedAt: new Date(),
       })
       .where(eq(assignments.id, assignment.id))
@@ -257,11 +259,28 @@ export async function gradeSubmissionAction(
     if (!submission) return failure("Submission not found.")
     const { course, user } = await assertManageableCourse(submission.courseId)
 
+    const [assignmentInfo] = await db
+      .select({ rubric: assignments.rubric, title: assignments.title })
+      .from(assignments)
+      .where(eq(assignments.id, submission.assignmentId))
+      .limit(1)
+
+    const rubricScores = parsed.data.rubricScores ?? null
+    let grade = parsed.data.grade
+    if (assignmentInfo && assignmentInfo.rubric.length > 0 && rubricScores) {
+      grade = assignmentInfo.rubric.reduce((sum, criterion) => {
+        const raw = Number(rubricScores[criterion.id] ?? 0)
+        const clamped = Math.min(criterion.points, Math.max(0, Number.isFinite(raw) ? raw : 0))
+        return sum + clamped
+      }, 0)
+    }
+
     await db
       .update(assignmentSubmissions)
       .set({
-        grade: parsed.data.grade,
+        grade,
         feedback: parsed.data.feedback || null,
+        rubricScores,
         status: "GRADED",
         gradedAt: new Date(),
         gradedById: user.id,
@@ -274,15 +293,10 @@ export async function gradeSubmissionAction(
       .from(users)
       .where(eq(users.id, submission.studentId))
       .limit(1)
-    const [assignmentInfo] = await db
-      .select({ title: assignments.title })
-      .from(assignments)
-      .where(eq(assignments.id, submission.assignmentId))
-      .limit(1)
     if (student) {
       await sendNotificationEmail(student.email, {
         title: "Assignment graded",
-        body: `Your submission for ${assignmentInfo?.title ?? "an assignment"} was graded: ${parsed.data.grade} points.`,
+        body: `Your submission for ${assignmentInfo?.title ?? "an assignment"} was graded: ${grade} points.`,
         url: `/learn/${course.slug}/assignments`,
       })
     }

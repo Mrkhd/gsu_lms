@@ -22,6 +22,7 @@ import type {
   SubmissionStatus,
   ConversationType,
   FormField,
+  RubricCriterion,
   UserStatus,
 } from "./types"
 
@@ -526,6 +527,8 @@ export const assignments = sqliteTable(
     /** When set, students cannot open or submit the assignment before this date. */
     availableAt: integer("available_at", { mode: "timestamp_ms" }),
     maxPoints: integer("max_points").notNull().default(100),
+    /** Optional grading rubric criteria. */
+    rubric: text("rubric", { mode: "json" }).$type<RubricCriterion[]>().notNull().default([]),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -550,6 +553,8 @@ export const assignmentSubmissions = sqliteTable(
     status: text("status").$type<SubmissionStatus>().notNull().default("SUBMITTED"),
     grade: real("grade"),
     feedback: text("feedback"),
+    /** Scores per rubric criterion (criterion id -> points). */
+    rubricScores: text("rubric_scores", { mode: "json" }).$type<Record<string, number>>(),
     gradedAt: integer("graded_at", { mode: "timestamp_ms" }),
     gradedById: text("graded_by_id"),
     createdAt: createdAt(),

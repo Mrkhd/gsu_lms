@@ -142,6 +142,29 @@ export function StudentAssignments({ assignments }: { assignments: AssignmentWit
                 </p>
               ) : null}
 
+              {assignment.rubric.length > 0 ? (
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Rubric
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {assignment.rubric.map((criterion) => (
+                      <li
+                        key={criterion.id}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <span>{criterion.label}</span>
+                        <span className="text-muted-foreground">
+                          {graded
+                            ? `${submission.rubricScores?.[criterion.id] ?? 0} / ${criterion.points}`
+                            : `${criterion.points} pts`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
               {graded ? (
                 <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
                   <p className="font-semibold text-emerald-700 dark:text-emerald-300">

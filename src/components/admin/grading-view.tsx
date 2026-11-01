@@ -83,8 +83,10 @@ export function GradingView({
                   <GradeForm
                     submissionId={submission.id}
                     maxPoints={assignment.maxPoints}
+                    rubric={assignment.rubric}
                     defaultGrade={submission.grade}
                     defaultFeedback={submission.feedback}
+                    defaultScores={submission.rubricScores}
                   />
                 </CardContent>
               </Card>

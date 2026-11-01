@@ -56,3 +56,9 @@ export type FormField = {
   placeholder?: string
   options?: string[]
 }
+
+export type RubricCriterion = {
+  id: string
+  label: string
+  points: number
+}
