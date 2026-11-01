@@ -65,7 +65,7 @@ export function AssignmentDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{assignment ? "Edit assignment" : "New assignment"}</DialogTitle>
           <DialogDescription>
