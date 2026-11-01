@@ -3,6 +3,7 @@ import type { PublishStatus } from "@/db/types"
 import { BookOpen, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -45,12 +46,15 @@ export default async function AdminCoursesPage({
         title="Courses"
         description="Create, publish and manage every course on the platform."
         actions={
-          <Button asChild size="sm">
-            <Link href="/admin/courses/new">
-              <Plus />
-              New course
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton type="courses" />
+            <Button asChild size="sm">
+              <Link href="/admin/courses/new">
+                <Plus />
+                New course
+              </Link>
+            </Button>
+          </div>
         }
       />
 

@@ -3,6 +3,7 @@ import type { PublishStatus } from "@/db/types"
 import { Plus, School } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -44,12 +45,15 @@ export default async function AdminProgramsPage({
         title="Programs"
         description="Degree programs made of semesters. Students pay per semester."
         actions={
-          <Button asChild size="sm">
-            <Link href="/admin/programs/new">
-              <Plus />
-              New program
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton type="programs" />
+            <Button asChild size="sm">
+              <Link href="/admin/programs/new">
+                <Plus />
+                New program
+              </Link>
+            </Button>
+          </div>
         }
       />
 

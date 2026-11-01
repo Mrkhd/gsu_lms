@@ -3,6 +3,7 @@ import type { UserStatus } from "@/db/types"
 import { GraduationCap, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { TableFilters, USER_STATUS_OPTIONS } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -45,16 +46,19 @@ export default async function StudentsPage({
         title="Students"
         description={`${students.length} students on the platform.`}
         actions={
-          <UserCreateDialog
-            role="STUDENT"
-            label="New student"
-            trigger={
-              <Button size="sm">
-                <Plus />
-                New student
-              </Button>
-            }
-          />
+          <div className="flex items-center gap-2">
+            <ExportButton type="students" />
+            <UserCreateDialog
+              role="STUDENT"
+              label="New student"
+              trigger={
+                <Button size="sm">
+                  <Plus />
+                  New student
+                </Button>
+              }
+            />
+          </div>
         }
       />
 

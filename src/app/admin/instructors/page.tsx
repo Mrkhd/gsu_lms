@@ -2,6 +2,7 @@ import type { UserStatus } from "@/db/types"
 import { Plus, Users } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { TableFilters, USER_STATUS_OPTIONS } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -44,16 +45,19 @@ export default async function InstructorsPage({
         title="Instructors"
         description={`${instructors.length} instructors.`}
         actions={
-          <UserCreateDialog
-            role="INSTRUCTOR"
-            label="New instructor"
-            trigger={
-              <Button size="sm">
-                <Plus />
-                New instructor
-              </Button>
-            }
-          />
+          <div className="flex items-center gap-2">
+            <ExportButton type="instructors" />
+            <UserCreateDialog
+              role="INSTRUCTOR"
+              label="New instructor"
+              trigger={
+                <Button size="sm">
+                  <Plus />
+                  New instructor
+                </Button>
+              }
+            />
+          </div>
         }
       />
 

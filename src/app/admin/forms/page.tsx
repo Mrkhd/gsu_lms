@@ -3,6 +3,7 @@ import type { PublishStatus } from "@/db/types"
 import { ClipboardList, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -44,12 +45,15 @@ export default async function AdminFormsPage({
         title="Forms"
         description="Build forms and collect responses. Students can submit without signing in."
         actions={
-          <Button asChild size="sm">
-            <Link href="/admin/forms/new">
-              <Plus />
-              New form
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton type="forms" />
+            <Button asChild size="sm">
+              <Link href="/admin/forms/new">
+                <Plus />
+                New form
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -101,6 +105,9 @@ export default async function AdminFormsPage({
                           </Link>
                         </Button>
                       ) : null}
+                      <Button asChild variant="ghost" size="sm">
+                        <a href={`/admin/forms/${form.id}/export`}>CSV</a>
+                      </Button>
                       <Button asChild variant="ghost" size="sm">
                         <Link href={`/admin/forms/${form.id}`}>Edit</Link>
                       </Button>

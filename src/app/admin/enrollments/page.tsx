@@ -3,6 +3,7 @@ import type { EnrollmentStatus } from "@/db/types"
 import { TicketCheck, UserPlus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { ENROLLMENT_STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -59,16 +60,19 @@ export default async function EnrollmentsPage({
         title="Enrollments"
         description="Semester assignments are the source of truth for course access."
         actions={
-          <EnrollmentGrantDialog
-            students={studentOptions}
-            programs={programs}
-            trigger={
-              <Button size="sm">
-                <UserPlus />
-                Assign to program
-              </Button>
-            }
-          />
+          <div className="flex items-center gap-2">
+            <ExportButton type="enrollments" />
+            <EnrollmentGrantDialog
+              students={studentOptions}
+              programs={programs}
+              trigger={
+                <Button size="sm">
+                  <UserPlus />
+                  Assign to program
+                </Button>
+              }
+            />
+          </div>
         }
       />
 

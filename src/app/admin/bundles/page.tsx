@@ -3,6 +3,7 @@ import type { PublishStatus } from "@/db/types"
 import { Boxes, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -44,12 +45,15 @@ export default async function AdminBundlesPage({
         title="Bundles"
         description="Group courses together and sell them as a package."
         actions={
-          <Button asChild size="sm">
-            <Link href="/admin/bundles/new">
-              <Plus />
-              New bundle
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton type="bundles" />
+            <Button asChild size="sm">
+              <Link href="/admin/bundles/new">
+                <Plus />
+                New bundle
+              </Link>
+            </Button>
+          </div>
         }
       />
 

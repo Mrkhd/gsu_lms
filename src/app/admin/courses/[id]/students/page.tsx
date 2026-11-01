@@ -4,6 +4,7 @@ import type { EnrollmentStatus } from "@/db/types"
 import { ArrowLeft, Users } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { ENROLLMENT_STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -67,6 +68,7 @@ export default async function AdminCourseStudentsPage({
       <PageHeader
         title="Enrolled students"
         description={`${students.length} students in ${course.title}`}
+        actions={<ExportButton type="course-students" extra={{ courseId: course.id }} />}
       />
 
       <TableFilters

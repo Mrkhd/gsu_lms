@@ -1,6 +1,7 @@
 import { FolderTree, Plus } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
+import { ExportButton } from "@/components/admin/export-button"
 import { TableFilters } from "@/components/admin/table-filters"
 import { CategoryDialog } from "@/components/admin/category-dialog"
 import { PageHeader } from "@/components/dashboard-shell"
@@ -36,14 +37,17 @@ export default async function CategoriesPage({
         title="Categories"
         description="Organise your catalog into topics."
         actions={
-          <CategoryDialog
-            trigger={
-              <Button size="sm">
-                <Plus />
-                New category
-              </Button>
-            }
-          />
+          <div className="flex items-center gap-2">
+            <ExportButton type="categories" />
+            <CategoryDialog
+              trigger={
+                <Button size="sm">
+                  <Plus />
+                  New category
+                </Button>
+              }
+            />
+          </div>
         }
       />
 
