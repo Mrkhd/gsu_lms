@@ -9,6 +9,7 @@ import {
   ChevronRight,
   CircleCheck,
   ClipboardList,
+  ExternalLink,
   FileText,
   Home,
   Lock,
@@ -359,8 +360,19 @@ function LessonBody({ lesson }: { lesson: LearningLesson }) {
       ) : null}
 
       {lesson.type === "PDF" && lesson.pdfUrl ? (
-        <div className="overflow-hidden rounded-xl border">
-          <iframe src={lesson.pdfUrl} title={lesson.title} className="h-[70vh] w-full" />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">Document</span>
+            <Button asChild variant="outline" size="sm">
+              <a href={lesson.pdfUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink />
+                Open in new tab
+              </a>
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded-xl border">
+            <iframe src={lesson.pdfUrl} title={lesson.title} className="h-[85vh] w-full" />
+          </div>
         </div>
       ) : null}
 
