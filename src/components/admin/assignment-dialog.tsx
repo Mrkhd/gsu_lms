@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useActionForm } from "@/hooks/use-action-form"
+import { defaultRubric } from "@/lib/rubrics"
 import { createAssignmentAction, updateAssignmentAction } from "@/server/actions/assignments"
 
 type AssignmentDefaults = {
@@ -54,7 +55,7 @@ export function AssignmentDialog({
 }) {
   const [open, setOpen] = React.useState(false)
   const [availableAt, setAvailableAt] = React.useState(toLocalInput(assignment?.availableAt))
-  const [rubric, setRubric] = React.useState(assignment?.rubric ?? [])
+  const [rubric, setRubric] = React.useState(assignment?.rubric ?? defaultRubric())
   const updateCriterion = (id: string, patch: Partial<{ label: string; points: number }>) =>
     setRubric((prev) => prev.map((criterion) => (criterion.id === id ? { ...criterion, ...patch } : criterion)))
   const { state, pending, onSubmit } = useActionForm(
@@ -118,26 +119,49 @@ export function AssignmentDialog({
             </div>
           </div>
           <div className="space-y-2 rounded-lg border p-3">
-            <div className="flex items-center justify-between">
-              <Label>Rubric (optional)</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setRubric((prev) => [
-                    ...prev,
-                    { id: crypto.randomUUID(), label: "", points: 10 },
-                  ])
-                }
-              >
-                <Plus />
-                Add criterion
-              </Button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label>Rubric</Label>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRubric(defaultRubric())}
+                >
+                  Default
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRubric([])}
+                  disabled={rubric.length === 0}
+                >
+                  Clear
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setRubric((prev) => [
+                      ...prev,
+                      { id: crypto.randomUUID(), label: "", points: 10 },
+                    ])
+                  }
+                >
+                  <Plus />
+                  Add criterion
+                </Button>
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              The default 100-point assessment rubric is preloaded. Edit it, add your own
+              criteria, or clear it for a single grade.
+            </p>
             {rubric.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Add criteria to grade with a rubric. Leave empty for a single grade.
+                No rubric — students receive a single grade out of the max points.
               </p>
             ) : (
               <div className="space-y-2">
