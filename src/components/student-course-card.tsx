@@ -50,6 +50,12 @@ export function StudentCourseCard({ item }: { item: StudentCourseItem }) {
           </p>
         </div>
 
+        {!active && !locked ? (
+          <p className="text-xs text-destructive">
+            Access expired. Contact the university to extend it.
+          </p>
+        ) : null}
+
         <div className="mt-auto flex items-center gap-1.5 text-xs text-muted-foreground">
           {lifetime ? (
             <>

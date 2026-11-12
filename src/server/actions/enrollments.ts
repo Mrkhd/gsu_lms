@@ -18,7 +18,11 @@ import { grantBundleAccess, grantProgramEnrollment } from "@/lib/access"
 import { sendNotificationEmail } from "@/lib/email"
 import { requireActionRole } from "@/lib/auth/server"
 import { addDays } from "@/lib/format"
-import { grantEnrollmentSchema, updateSemesterEnrollmentSchema } from "@/lib/validations"
+import {
+  extendEnrollmentSchema,
+  grantEnrollmentSchema,
+  updateSemesterEnrollmentSchema,
+} from "@/lib/validations"
 import {
   failure,
   formDataToObject,
@@ -140,6 +144,44 @@ export async function updateSemesterEnrollmentAction(
 
     refreshEnrollments(studentId)
     return success("Semester enrollment updated.")
+  } catch (error) {
+    return toActionError(error)
+  }
+}
+
+export async function extendCourseEnrollmentAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  await requireActionRole("ADMIN")
+  const parsed = extendEnrollmentSchema.safeParse(formDataToObject(formData))
+  if (!parsed.success) return fromZodError(parsed.error)
+  const { enrollmentId, accessDurationDays } = parsed.data
+
+  try {
+    const db = getDb()
+    const now = new Date()
+    const expiresAt = accessDurationDays === null ? null : addDays(now, accessDurationDays)
+
+    const [row] = await db
+      .update(enrollments)
+      .set({ status: "ACTIVE", expiresAt, updatedAt: now })
+      .where(eq(enrollments.id, enrollmentId))
+      .returning({
+        id: enrollments.id,
+        studentId: enrollments.studentId,
+        courseId: enrollments.courseId,
+      })
+    if (!row) return failure("Enrollment not found.")
+
+    refreshEnrollments(row.studentId)
+    revalidatePath(`/admin/courses/${row.courseId}/students`)
+    revalidatePath("/dashboard/my-courses")
+    return success(
+      accessDurationDays === null
+        ? "Course access extended to lifetime."
+        : `Course access extended by ${accessDurationDays} days.`
+    )
   } catch (error) {
     return toActionError(error)
   }

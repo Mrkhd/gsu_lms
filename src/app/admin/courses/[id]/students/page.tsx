@@ -5,6 +5,7 @@ import { ArrowLeft, Users } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
 import { ExportButton } from "@/components/admin/export-button"
+import { ExtendAccessDialog } from "@/components/admin/extend-access-dialog"
 import { ENROLLMENT_STATUS_OPTIONS, TableFilters } from "@/components/admin/table-filters"
 import { PageHeader } from "@/components/dashboard-shell"
 import { EmptyState } from "@/components/empty-state"
@@ -128,7 +129,15 @@ export default async function AdminCourseStudentsPage({
                     {formatDate(enrollment.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-1">
+                      <ExtendAccessDialog
+                        enrollmentId={enrollment.id}
+                        trigger={
+                          <Button variant="ghost" size="sm">
+                            Extend
+                          </Button>
+                        }
+                      />
                       <ActionButton
                         variant="ghost"
                         size="sm"

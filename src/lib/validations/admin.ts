@@ -19,6 +19,11 @@ export const updateSemesterEnrollmentSchema = z.object({
   accessDurationDays: accessDurationField,
 })
 
+export const extendEnrollmentSchema = z.object({
+  enrollmentId: z.string().min(1),
+  accessDurationDays: accessDurationField,
+})
+
 export const emailStudentsSchema = z.object({
   courseId: z.string().min(1),
   subject: z.string().trim().min(1, "Subject is required").max(200),
