@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -34,9 +35,13 @@ export function ExtendAccessDialog({
   trigger: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
+  const [preset, setPreset] = React.useState("180")
+  const [customDays, setCustomDays] = React.useState("")
   const { state, pending, onSubmit } = useActionForm(extendCourseEnrollmentAction, {
     onSuccess: () => setOpen(false),
   })
+
+  const duration = customDays.trim() ? customDays.trim() : preset
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -50,25 +55,50 @@ export function ExtendAccessDialog({
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <input type="hidden" name="enrollmentId" value={enrollmentId} />
+          <input type="hidden" name="accessDurationDays" value={duration} />
           <FormError state={state} />
+
           <div className="space-y-2">
-            <Label>New access duration</Label>
-            <Select name="accessDurationDays" defaultValue="180">
+            <Label>Preset duration</Label>
+            <Select
+              value={preset}
+              onValueChange={(value) => {
+                setPreset(value)
+                setCustomDays("")
+              }}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ACCESS_DURATION_PRESETS.map((preset) => (
+                {ACCESS_DURATION_PRESETS.map((option) => (
                   <SelectItem
-                    key={preset.label}
-                    value={preset.days === null ? "lifetime" : String(preset.days)}
+                    key={option.label}
+                    value={option.days === null ? "lifetime" : String(option.days)}
                   >
-                    {preset.label}
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="custom-days">Or enter days</Label>
+            <Input
+              id="custom-days"
+              type="number"
+              min={1}
+              max={3650}
+              placeholder="e.g. 14"
+              value={customDays}
+              onChange={(event) => setCustomDays(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Overrides the preset. Leave empty to use the preset duration.
+            </p>
+          </div>
+
           <DialogFooter>
             <Button type="submit" disabled={pending}>
               {pending && <Loader2 className="size-4 animate-spin" />}
