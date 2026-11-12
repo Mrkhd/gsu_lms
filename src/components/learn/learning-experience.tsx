@@ -114,6 +114,34 @@ export function LearningExperience({
     />
   )
 
+  const controls = current ? (
+    <>
+      <Button
+        variant="outline"
+        disabled={!prev}
+        onClick={() => prev && router.push(`/learn/${course.slug}/${prev.id}`)}
+      >
+        <ChevronLeft />
+        Previous
+      </Button>
+      <Button
+        variant={current.completed ? "secondary" : "default"}
+        onClick={onToggleComplete}
+      >
+        {current.completed ? <CircleCheck /> : <Check />}
+        {current.completed ? "Completed" : "Mark complete"}
+      </Button>
+      <Button
+        variant="outline"
+        disabled={!next}
+        onClick={() => next && router.push(`/learn/${course.slug}/${next.id}`)}
+      >
+        Next
+        <ChevronRight />
+      </Button>
+    </>
+  ) : null
+
   return (
     <div className="flex h-svh flex-col overflow-hidden">
       <header className="z-30 shrink-0 border-b bg-background/80 backdrop-blur">
@@ -169,40 +197,29 @@ export function LearningExperience({
           {sidebar}
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
-            {current ? (
-              <>
+          {current ? (
+            current.type === "PDF" && current.pdfUrl ? (
+              <div className="flex h-full flex-col">
+                <div className="min-h-0 flex-1">
+                  <LessonBody lesson={current} />
+                </div>
+                <div className="flex flex-col gap-2 border-t bg-background p-2 sm:flex-row sm:items-center sm:justify-between">
+                  {controls}
+                </div>
+              </div>
+            ) : (
+              <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
                 <LessonBody lesson={current} />
                 <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <Button
-                    variant="outline"
-                    disabled={!prev}
-                    onClick={() => prev && router.push(`/learn/${course.slug}/${prev.id}`)}
-                  >
-                    <ChevronLeft />
-                    Previous
-                  </Button>
-                  <Button
-                    variant={current.completed ? "secondary" : "default"}
-                    onClick={onToggleComplete}
-                  >
-                    {current.completed ? <CircleCheck /> : <Check />}
-                    {current.completed ? "Completed" : "Mark complete"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={!next}
-                    onClick={() => next && router.push(`/learn/${course.slug}/${next.id}`)}
-                  >
-                    Next
-                    <ChevronRight />
-                  </Button>
+                  {controls}
                 </div>
-              </>
-            ) : (
+              </div>
+            )
+          ) : (
+            <div className="mx-auto max-w-4xl p-4 sm:p-6">
               <p className="text-muted-foreground">This course has no lessons yet.</p>
-            )}
-          </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
@@ -344,6 +361,29 @@ function LessonSidebar({
 }
 
 function LessonBody({ lesson }: { lesson: LearningLesson }) {
+  if (lesson.type === "PDF" && lesson.pdfUrl) {
+    return (
+      <div className="relative h-full w-full">
+        <iframe
+          src={lesson.pdfUrl}
+          title={lesson.title}
+          className="h-full w-full border-0"
+        />
+        <Button
+          asChild
+          size="sm"
+          variant="secondary"
+          className="absolute top-2 right-2 shadow"
+        >
+          <a href={lesson.pdfUrl} target="_blank" rel="noopener noreferrer">
+            <ExternalLink />
+            Open in new tab
+          </a>
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5">
       <div className="space-y-1">
@@ -356,23 +396,6 @@ function LessonBody({ lesson }: { lesson: LearningLesson }) {
       {lesson.type === "TEXT" ? (
         <div className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">
           {lesson.content || "No content yet."}
-        </div>
-      ) : null}
-
-      {lesson.type === "PDF" && lesson.pdfUrl ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium">Document</span>
-            <Button asChild variant="outline" size="sm">
-              <a href={lesson.pdfUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink />
-                Open in new tab
-              </a>
-            </Button>
-          </div>
-          <div className="overflow-hidden rounded-xl border">
-            <iframe src={lesson.pdfUrl} title={lesson.title} className="h-[85vh] w-full" />
-          </div>
         </div>
       ) : null}
 
