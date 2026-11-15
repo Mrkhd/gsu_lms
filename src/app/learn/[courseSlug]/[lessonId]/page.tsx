@@ -179,6 +179,11 @@ export default async function LessonPage({
         ? []
         : data.assignments
             .filter((assignment) => weekNumberFromTitle(assignment.title) === week)
+            .sort((a, b) => {
+              const aDue = a.dueAt ? a.dueAt.getTime() : Number.POSITIVE_INFINITY
+              const bDue = b.dueAt ? b.dueAt.getTime() : Number.POSITIVE_INFINITY
+              return aDue - bDue
+            })
             .map((assignment) => ({
               id: assignment.id,
               title: assignment.title,

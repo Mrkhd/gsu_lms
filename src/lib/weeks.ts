@@ -35,6 +35,11 @@ function previousWeekSubmitted(input: {
   return previous.every((assignment) => input.submittedIds.has(assignment.id))
 }
 
+/** A week is "past" once the following week has started. Past weeks stay open. */
+function weekHasPassed(enrollmentStart: Date, week: number, now: number) {
+  return now >= weekReleaseDate(enrollmentStart, week + 1).getTime()
+}
+
 /** Availability of a section, driven by each student's own weekly progression. */
 export function sectionAvailability(input: {
   week: number | null
@@ -57,6 +62,7 @@ export function sectionAvailability(input: {
   }
   if (
     input.week > 1 &&
+    !weekHasPassed(input.enrollmentStart, input.week, input.now) &&
     !previousWeekSubmitted({
       week: input.week,
       allAssignments: input.allAssignments,
@@ -85,6 +91,7 @@ export function assignmentAvailability(input: {
   }
   if (
     week > 1 &&
+    !weekHasPassed(input.enrollmentStart, week, input.now) &&
     !previousWeekSubmitted({
       week,
       allAssignments: input.allAssignments,

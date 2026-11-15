@@ -1145,11 +1145,14 @@ export async function getCourseAssignments(courseId: string) {
     if (sub.status === "GRADED") entry.graded++
     map.set(sub.assignmentId, entry)
   }
-  return rows.map((assignment) => ({
-    ...assignment,
-    submissionCount: map.get(assignment.id)?.total ?? 0,
-    gradedCount: map.get(assignment.id)?.graded ?? 0,
-  }))
+  const dueValue = (value: Date | null) => (value ? value.getTime() : Number.POSITIVE_INFINITY)
+  return rows
+    .map((assignment) => ({
+      ...assignment,
+      submissionCount: map.get(assignment.id)?.total ?? 0,
+      gradedCount: map.get(assignment.id)?.graded ?? 0,
+    }))
+    .sort((a, b) => dueValue(a.dueAt) - dueValue(b.dueAt))
 }
 
 export type CourseAssignmentItem = Awaited<ReturnType<typeof getCourseAssignments>>[number]
@@ -1227,16 +1230,19 @@ export async function getStudentCourseAssignments(studentId: string, courseId: s
   ])
   const map = new Map(subs.map((sub) => [sub.assignmentId, sub]))
   const now = Date.now()
-  return rows.map((assignment) => {
-    const locked = assignment.availableAt ? assignment.availableAt.getTime() > now : false
-    return {
-      ...assignment,
-      // Do not send locked instructions/submissions to the browser before release.
-      description: locked ? null : assignment.description,
-      locked,
-      submission: locked ? null : map.get(assignment.id) ?? null,
-    }
-  })
+  const dueValue = (value: Date | null) => (value ? value.getTime() : Number.POSITIVE_INFINITY)
+  return rows
+    .map((assignment) => {
+      const locked = assignment.availableAt ? assignment.availableAt.getTime() > now : false
+      return {
+        ...assignment,
+        // Do not send locked instructions/submissions to the browser before release.
+        description: locked ? null : assignment.description,
+        locked,
+        submission: locked ? null : map.get(assignment.id) ?? null,
+      }
+    })
+    .sort((a, b) => dueValue(a.dueAt) - dueValue(b.dueAt))
 }
 
 export type StudentAssignmentItem = Awaited<ReturnType<typeof getStudentCourseAssignments>>[number]
